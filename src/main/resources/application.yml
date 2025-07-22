@@ -1,0 +1,41 @@
+server:
+  port: 8081
+  shutdown: GRACEFUL
+
+spring:
+  application:
+    name: money-maker
+  profiles:
+    active: default
+
+logging:
+  level:
+    root: INFO
+    money.maker: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
+
+websocket:
+  configuration:
+    uri: ws://localhost:8082
+    reconnect-timeout: 3000 # in milliseconds
+
+candle:
+  aggregation-period: 30
+  ma:
+    frame-count-long: 200
+    frame-count-short: 50
+  rsi:
+    frame-count: 14
+
+scheduler:
+  close-cron: "0 50 * * * ?"
+  open-cron: "0 45 * * * ?"
+  task-cron: "0/30 * * * * ?"
+  pool-size: 5
+
+testing:
+  enable: true
+  websocket:
+    server:
+      port: 8082
