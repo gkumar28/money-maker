@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.5'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.trade.bot'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17' // or 21 if using latest JDK
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // JSON parsing
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.core:jackson-core'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // TA4J for technical indicators
+    implementation 'org.ta4j:ta4j-core:0.15'
+
+    // WebSocket Client (for Zerodha tick data)
+    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
+
+    // REST client (Zerodha Kite order placement)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux' // includes WebClient
+
+    // Email alerting (optional)
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // Database (optional - H2 or PostgreSQL)
+    runtimeOnly 'com.h2database:h2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    useJUnitPlatform()
+}
