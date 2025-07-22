@@ -12,14 +12,29 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    set('springCloudVersion', '2023.0.2')
+    set('springBootVersion', '3.2.5')
+    set('camelVersion', '4.3.0')
+}
+
 dependencies {
     // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    // websocket
+    implementation 'org.java-websocket:Java-WebSocket:1.5.4'
+
+    // camel
+    implementation 'org.apache.camel.springboot:camel-spring-boot-starter'
+
     // JSON parsing
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.core:jackson-core'
+
+    // guava cache
+    implementation 'com.google.guava:guava:33.0.0-jre'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -43,6 +58,13 @@ dependencies {
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "org.apache.camel.springboot:camel-spring-boot-bom:${camelVersion}"
+    }
 }
 
 test {
