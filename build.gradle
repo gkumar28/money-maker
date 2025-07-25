@@ -56,8 +56,8 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-    // Testing
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // common
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
 }
 
 dependencyManagement {

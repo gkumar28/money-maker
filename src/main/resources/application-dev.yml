@@ -16,7 +16,7 @@ logging:
 websocket:
   configuration:
     uri: ws://localhost:8082
-    reconnect-timeout: 1000
+    reconnect-timeout: 3000
 
 candle:
   aggregation-period: 30
@@ -27,8 +27,12 @@ candle:
     frame-count: 14
 
 scheduler:
-  connect-auto: false
-  close-cron: "0 0 16 * * MON-FRI"
-  open-cron: "0 0 9 * * MON-FRI"
-  task-cron: "0 * * * * MON-FRI"
+  connect-auto: true
+  task-cron: "0 * * * * ?"
   pool-size: 5
+
+dev:
+  enable: true
+  websocket:
+    server:
+      port: 8082
