@@ -1,6 +1,6 @@
 package money.maker;
 
-import money.maker.config.external.CandleConfiguration;
+import money.maker.config.external.BarConfiguration;
 import money.maker.config.external.SchedulerConfiguration;
 import money.maker.config.external.WebSocketClientConfiguration;
 import org.springframework.boot.SpringApplication;
@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableConfigurationProperties({
     WebSocketClientConfiguration.class,
-    CandleConfiguration.class,
+    BarConfiguration.class,
     SchedulerConfiguration.class
 })
 public class MoneyMakerApplication {

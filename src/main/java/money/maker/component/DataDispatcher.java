@@ -15,11 +15,11 @@ public class DataDispatcher {
 
     private final ObjectMapper objectMapper;
     private final ProducerTemplate producerTemplate;
-    private final RiskManager riskManager;
+    private final Portfolio portfolio;
 
     public void sendMessage(String message) throws JsonProcessingException {
         Tick data = objectMapper.readValue(message, Tick.class);
-        if (riskManager.getInstruments().contains(data.getInstrumentToken())) {
+        if (portfolio.getInstruments().contains(data.getInstrumentToken())) {
             producerTemplate.sendBody("direct:websocket-data", data);
         }
     }

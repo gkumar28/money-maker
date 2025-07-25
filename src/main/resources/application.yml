@@ -18,13 +18,8 @@ websocket:
     uri: ws://localhost:8082
     reconnect-timeout: 1000
 
-candle:
-  aggregation-period: 30
-  ma:
-    frame-count-long: 200
-    frame-count-short: 50
-  rsi:
-    frame-count: 14
+bar:
+  time-frame: 30
 
 scheduler:
   connect-auto: false
