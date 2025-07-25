@@ -1,9 +1,7 @@
-package money.maker.component;
+package component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -14,12 +12,13 @@ import org.springframework.stereotype.Component;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.logging.Logger;
 
 @Component
 @ConditionalOnProperty(name = "testing.enable", havingValue = "true", matchIfMissing = false)
-@RequiredArgsConstructor
-@Slf4j
 public class TestWebSocketServer {
+
+    private static final log = Logger.getLogger(TestWebSocketServer.class);
 
     // Server port can be configured externally
     @Value("${testing.websocket.server.port:8081}")
