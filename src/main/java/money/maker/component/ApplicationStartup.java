@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import money.maker.config.external.CandleConfiguration;
 import money.maker.config.external.SchedulerConfiguration;
 import money.maker.service.CandleAggregatorService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -28,14 +29,12 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
 
-        // start websocket and taskRunner
-        CronTrigger dailyStartTrigger = new CronTrigger(schedulerConfiguration.getOpenCron());
-        webSocketClient.connect();
-        threadPoolTaskScheduler.schedule(webSocketClient::connect, dailyStartTrigger);
 
-        // stop websocket and taskRunner
-        CronTrigger dailyStopTrigger = new CronTrigger(schedulerConfiguration.getCloseCron());
-        threadPoolTaskScheduler.schedule(webSocketClient::close, dailyStopTrigger);
+        // schedule task for opening wb
+        scheduleTask(schedulerConfiguration.getOpenCron(), webSocketClient::connect);
+
+        // schedule task for closing wb
+        scheduleTask(schedulerConfiguration.getCloseCron(), webSocketClient::close);
 
         // start trade signal task
         // to be implemented
@@ -49,5 +48,12 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         threadPoolTaskScheduler.scheduleAtFixedRate(() ->
             candleAggregatorService.updateInstrument(longPeriod, shortPeriod, rsiPeriod),
             Duration.of(aggregationPeriod, ChronoUnit.SECONDS));
+    }
+
+    private void scheduleTask(String cronExp, Runnable task) {
+        if (StringUtils.isNotBlank(cronExp)) {
+            CronTrigger trigger = new CronTrigger(cronExp);
+            threadPoolTaskScheduler.schedule(task, trigger);
+        }
     }
 }
