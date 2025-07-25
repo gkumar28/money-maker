@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 @Component
 @RequiredArgsConstructor
-public class RiskManager {
+public class Portfolio {
 
     private final List<String> instruments = List.of("RELIANCE");
 }
