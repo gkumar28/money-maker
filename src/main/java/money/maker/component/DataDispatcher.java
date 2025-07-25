@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class WebSocketDataDispatcher {
+public class DataDispatcher {
 
     private final ObjectMapper objectMapper;
     private final ProducerTemplate producerTemplate;

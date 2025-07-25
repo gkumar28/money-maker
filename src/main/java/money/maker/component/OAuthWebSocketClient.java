@@ -28,7 +28,7 @@ public class OAuthWebSocketClient extends WebSocketClient {
 
     private final WebSocketClientConfiguration webSocketClientConfiguration;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
-    private final WebSocketDataDispatcher webSocketDataDispatcher;
+    private final DataDispatcher dataDispatcher;
 
     private Set<String> instruments = new HashSet<>();
     private AtomicBoolean toReconnect = new AtomicBoolean(false);
@@ -37,11 +37,11 @@ public class OAuthWebSocketClient extends WebSocketClient {
     // Inject Camel's ProducerTemplate to push messages into routes
     public OAuthWebSocketClient(WebSocketClientConfiguration webSocketClientConfiguration,
                                 ThreadPoolTaskScheduler threadPoolTaskScheduler,
-                                WebSocketDataDispatcher webSocketDataDispatcher)
+                                DataDispatcher dataDispatcher)
         throws URISyntaxException {
         super(new URI(webSocketClientConfiguration.getUri()));
 
-        this.webSocketDataDispatcher = webSocketDataDispatcher;
+        this.dataDispatcher = dataDispatcher;
         this.webSocketClientConfiguration = webSocketClientConfiguration;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
@@ -58,20 +58,17 @@ public class OAuthWebSocketClient extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake handshake) {
         log.info("Connected to WebSocket URI: {}", webSocketClientConfiguration.getUri());
-        // prevent future reconnection attempts, if any setup
+        // stop future reconnection attempts, if any setup
         toReconnect.set(false);
-        // Send auth JSON after connection
-        String authMessage = "{\"action\":\"subscribe\",\"tokens\":\"<your_token_here>\"}";
-        send(authMessage);
     }
 
     @Override
     public void onMessage(String message) {
-        log.info("Received message: {}", message);
+        log.debug("Received message: {}", message);
         try {
-            webSocketDataDispatcher.sendMessage(message);
+            dataDispatcher.sendMessage(message);
         } catch (JsonProcessingException e) {
-            log.error("could not process message: {}", e);
+            log.error("could not process message due to error", e);
         }
     }
 
