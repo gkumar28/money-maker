@@ -2,7 +2,7 @@ package money.maker.processor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import money.maker.service.CandleAggregatorService;
+import money.maker.service.TickAggregatorService;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.springframework.stereotype.Component;
@@ -13,13 +13,13 @@ import money.maker.dto.Tick;
 @Slf4j
 public class TickAggregatorProcessor implements Processor {
 
-    private final CandleAggregatorService candleAggregatorService;
+    private final TickAggregatorService tickAggregatorService;
 
     @Override
     public void process(Exchange exchange) throws Exception {
         Tick currentTick = (Tick) exchange.getMessage().getBody();
         log.debug("data received in tickAggregator: {}", currentTick);
 
-        candleAggregatorService.processTick(currentTick);
+        tickAggregatorService.processTick(currentTick);
     }
 }
