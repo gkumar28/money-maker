@@ -31,7 +31,9 @@ public class InstrumentCache {
 
     public BarSeries getOrCreateInstrumentData(String token) {
         try {
-            return cache.get(token, () -> new BaseBarSeries(token, new ArrayList<>(), DoubleNum.ZERO));
+            BarSeries barSeries = cache.get(token, () -> new BaseBarSeries(token, new ArrayList<>(), DoubleNum.ZERO));
+            barSeries.setMaximumBarCount(100);
+            return barSeries;
         } catch (Exception e) {
             log.error("Error getting/creating InstrumentData for token: {}", token, e);
             return null;
