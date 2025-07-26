@@ -7,7 +7,6 @@ import org.ta4j.core.Indicator;
 import org.ta4j.core.indicators.CachedIndicator;
 import org.ta4j.core.num.Num;
 
-@Component
 public class KallmanIndicator extends CachedIndicator<Num> {
 
     private final Indicator<Num> priceIndicator;
