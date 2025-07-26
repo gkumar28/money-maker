@@ -9,7 +9,7 @@ spring:
 logging:
   level:
     root: INFO
-    money.maker: INFO
+    money.maker: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
 
@@ -24,7 +24,6 @@ bar:
 scheduler:
   connect-auto: true
   task-cron: "0 * * * * ?"
-  pool-size: 5
 
 dev:
   enable: true

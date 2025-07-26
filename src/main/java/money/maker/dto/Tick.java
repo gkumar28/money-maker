@@ -10,7 +10,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 public class Tick {
 
-    String instrumentToken;
+    String symbol;
     double price;
     long volume;
     long timestamp;

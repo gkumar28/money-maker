@@ -29,6 +29,9 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
 
+        if (schedulerConfiguration.isConnectAuto()) {
+            webSocketClient.connect();
+        }
 
         // schedule task for opening wb
         scheduleTask(schedulerConfiguration.getOpenCron(), webSocketClient::connect);
