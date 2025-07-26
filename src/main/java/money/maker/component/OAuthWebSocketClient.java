@@ -11,12 +11,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 import money.maker.config.external.WebSocketClientConfiguration;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,20 +27,19 @@ public class OAuthWebSocketClient extends WebSocketClient {
 
     private final WebSocketClientConfiguration webSocketClientConfiguration;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
-    private final DataDispatcher dataDispatcher;
+    private final TickDataEmitter tickDataEmitter;
 
-    private Set<String> instruments = new HashSet<>();
     private AtomicBoolean toReconnect = new AtomicBoolean(false);
     private final AtomicReference<ScheduledFuture<?>> reconnectionFuture = new AtomicReference<>();
 
     // Inject Camel's ProducerTemplate to push messages into routes
     public OAuthWebSocketClient(WebSocketClientConfiguration webSocketClientConfiguration,
                                 ThreadPoolTaskScheduler threadPoolTaskScheduler,
-                                DataDispatcher dataDispatcher)
+                                TickDataEmitter tickDataEmitter)
         throws URISyntaxException {
         super(new URI(webSocketClientConfiguration.getUri()));
 
-        this.dataDispatcher = dataDispatcher;
+        this.tickDataEmitter = tickDataEmitter;
         this.webSocketClientConfiguration = webSocketClientConfiguration;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
@@ -66,8 +64,8 @@ public class OAuthWebSocketClient extends WebSocketClient {
     public void onMessage(String message) {
         log.debug("Received message: {}", message);
         try {
-            dataDispatcher.sendMessage(message);
-        } catch (JsonProcessingException e) {
+            tickDataEmitter.emit(message);
+        } catch (IOException e) {
             log.error("could not process message due to error", e);
         }
     }

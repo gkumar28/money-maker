@@ -22,21 +22,9 @@ dependencies {
     // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-    // websocket
-    implementation 'org.java-websocket:Java-WebSocket:1.5.4'
-
-    // camel
-    implementation 'org.apache.camel.springboot:camel-spring-boot-starter'
-
-    // JSON parsing
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.core:jackson-core'
-
-    // guava cache
-    implementation 'com.google.guava:guava:33.0.0-jre'
-
-    // lombok
+    // compilation only
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
@@ -44,21 +32,22 @@ dependencies {
     implementation 'org.ta4j:ta4j-core:0.17'
     implementation("org.ejml:ejml-all:0.41")
 
-    // WebSocket Client (for Zerodha tick data)
+    // tick processing
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-
-    // REST client (Zerodha Kite order placement)
-    implementation 'org.springframework.boot:spring-boot-starter-webflux' // includes WebClient
+    implementation("com.lmax:disruptor:3.4.2")
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // Email alerting (optional)
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     // Database (optional - H2 or PostgreSQL)
     runtimeOnly 'com.h2database:h2'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // common
     implementation 'org.apache.commons:commons-lang3:3.18.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.core:jackson-core'
+    implementation 'com.google.guava:guava:33.0.0-jre'
 }
 
 dependencyManagement {
