@@ -8,7 +8,6 @@ import org.ta4j.core.TradingRecord;
 import org.ta4j.core.num.DoubleNum;
 import org.ta4j.core.num.Num;
 
-@Component
 @RequiredArgsConstructor
 public class SurgeRule implements Rule {
 
