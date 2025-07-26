@@ -3,6 +3,7 @@ package money.maker.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import money.maker.cache.InstrumentCache;
+import money.maker.component.Portfolio;
 import money.maker.config.external.BarConfiguration;
 import money.maker.dto.Tick;
 import money.maker.dto.TickAggregator;
@@ -21,42 +22,42 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class TickAggregatorServiceImpl implements TickAggregatorService {
 
-    private final InstrumentCache instrumentCache;
     private final BarConfiguration barConfiguration;
-    private final ConcurrentHashMap<String, TickAggregator> currentBarConcurrentMap = new ConcurrentHashMap<>();
+    private final InstrumentCache instrumentCache;
+    private final Portfolio portfolio;
+    private final ConcurrentHashMap<String, TickAggregator> tickAggregatorMap = new ConcurrentHashMap<>();
 
     @Override
     public void processTick(Tick tick) {
         log.debug("updated tick cache");
         String token = tick.getInstrumentToken();
 
-        currentBarConcurrentMap.compute(token,
-            (k, aggregator) -> getOrCreateNewTickAggregator(aggregator)
-        );
-    }
-
-    private TickAggregator getOrCreateNewTickAggregator(TickAggregator aggregator) {
-        if (null == aggregator) {
-            int barDurationMilli = barConfiguration.getTimeFrame() * 1000;
-            long currentTimeMilli = Instant.now().toEpochMilli();
-            long barEndTimeMilli = ((currentTimeMilli / barDurationMilli) + 1) * barDurationMilli;
-
-            aggregator = new TickAggregator(
-                ZonedDateTime.ofInstant(Instant.ofEpochMilli(barEndTimeMilli), ZoneId.of("UTC")),
-                Duration.ofSeconds(barConfiguration.getTimeFrame()));
+        TickAggregator aggregator = tickAggregatorMap.get(token);
+        if (null != aggregator) {
+            aggregator.addTrade(tick.getVolume(), tick.getPrice());
         }
-
-        return aggregator;
     }
 
     @Override
     public void updateInstrument() {
         log.debug("clearing tick cache and updating instruments");
-        currentBarConcurrentMap.forEach((token, tickAggregator) ->
-            instrumentCache.updateInstrument(
-                token,
-                tickAggregator.asBar(DoubleNum::valueOf)
-        ));
-        currentBarConcurrentMap.clear();
+        int barDurationMilli = barConfiguration.getTimeFrame() * 1000;
+        long currentTimeMilli = Instant.now().toEpochMilli();
+        long barEndTimeMilli = ((currentTimeMilli / barDurationMilli) + 1) * barDurationMilli;
+
+        ZonedDateTime newEndTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(barEndTimeMilli), ZoneId.of("UTC"));
+        for (String symbol : portfolio.getInstruments()) {
+
+            TickAggregator oldAggregator = tickAggregatorMap.get(symbol);
+            TickAggregator newAggregator = new TickAggregator(newEndTime, Duration.ofMillis(barDurationMilli));
+
+            if (null == oldAggregator) {
+                tickAggregatorMap.computeIfAbsent(symbol, k -> newAggregator);
+            } else if (tickAggregatorMap.replace(symbol, oldAggregator, newAggregator)) {
+                instrumentCache.updateInstrument(
+                    symbol,
+                    oldAggregator.asBar(DoubleNum::valueOf));
+            }
+        }
     }
 }
