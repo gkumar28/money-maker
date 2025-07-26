@@ -3,8 +3,9 @@ package money.maker.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import money.maker.component.TestWebSocketServer;
+import money.maker.dev.WebSocketApiServer;
 import money.maker.dto.Tick;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,9 +15,10 @@ import java.time.Instant;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+@Profile("dev")
 public class TestingApiController implements TestingApi {
 
-    private final TestWebSocketServer server;
+    private final WebSocketApiServer server;
     private final ObjectMapper objectMapper;
 
     public ResponseEntity<String> sendTick(@RequestBody Tick tick) {
