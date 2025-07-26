@@ -5,11 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Component
 @RequiredArgsConstructor
 public class Portfolio {
 
-    private final List<String> instruments = List.of("RELIANCE");
+    private final Set<String> instruments = Set.of("RELIANCE");
 }
