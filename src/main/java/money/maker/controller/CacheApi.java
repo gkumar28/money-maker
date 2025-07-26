@@ -5,10 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.ta4j.core.BarSeries;
 
 @RequestMapping("/cache")
 public interface CacheApi {
 
     @GetMapping("")
-    ResponseEntity<InstrumentData> getCacheData(@RequestParam("key") String key);
+    ResponseEntity<BarSeries> getCacheData(@RequestParam("key") String key);
 }
