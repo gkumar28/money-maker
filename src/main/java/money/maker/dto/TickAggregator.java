@@ -76,6 +76,18 @@ public class TickAggregator {
         );
     }
 
+    public void reset() {
+        open.set(0.0);
+        high.reset();
+        low.reset();
+        close.set(0.0);
+        volume.reset();
+        amount.reset();
+        trades.reset();
+    }
+
+    // OHLC update methods provide atomicity, but do not guarantee ordering.
+    // At retail trading scale (~1 min bars), ordering at microsecond scale has minimal impact
     public void updateOpen(double price) {
         open.set(price);
     }
@@ -100,7 +112,7 @@ public class TickAggregator {
         amount.add(price * volume);
     }
 
-    private void updateTrades() {
+    public void updateTrades() {
         trades.add(1);
     }
 }
