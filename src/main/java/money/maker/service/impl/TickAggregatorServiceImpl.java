@@ -8,9 +8,11 @@ import money.maker.dto.Tick;
 import money.maker.dto.TickAggregator;
 import money.maker.service.TickAggregatorService;
 import org.springframework.stereotype.Service;
-import org.ta4j.core.num.DecimalNum;
+import org.ta4j.core.num.DoubleNum;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,13 +29,24 @@ public class TickAggregatorServiceImpl implements TickAggregatorService {
     public void processTick(Tick tick) {
         log.debug("updated tick cache");
         String token = tick.getInstrumentToken();
-        currentBarConcurrentMap.compute(token, (k, existing) -> {
-            if (existing == null) {
-                existing = new TickAggregator(DecimalNum::valueOf);
-            }
-            existing.addTrade(tick.getVolume(), tick.getPrice());
-            return existing;
-        });
+
+        currentBarConcurrentMap.compute(token,
+            (k, aggregator) -> getOrCreateNewTickAggregator(aggregator)
+        );
+    }
+
+    private TickAggregator getOrCreateNewTickAggregator(TickAggregator aggregator) {
+        if (null == aggregator) {
+            int barDurationMilli = barConfiguration.getTimeFrame() * 1000;
+            long currentTimeMilli = Instant.now().toEpochMilli();
+            long barEndTimeMilli = ((currentTimeMilli / barDurationMilli) + 1) * barDurationMilli;
+
+            aggregator = new TickAggregator(
+                ZonedDateTime.ofInstant(Instant.ofEpochMilli(barEndTimeMilli), ZoneId.of("UTC")),
+                Duration.ofSeconds(barConfiguration.getTimeFrame()));
+        }
+
+        return aggregator;
     }
 
     @Override
@@ -42,9 +55,8 @@ public class TickAggregatorServiceImpl implements TickAggregatorService {
         currentBarConcurrentMap.forEach((token, tickAggregator) ->
             instrumentCache.updateInstrument(
                 token,
-                tickAggregator.asBar(ZonedDateTime.now(),
-                    Duration.ofSeconds(barConfiguration.getTimeFrame())))
-        );
+                tickAggregator.asBar(DoubleNum::valueOf)
+        ));
         currentBarConcurrentMap.clear();
     }
 }
