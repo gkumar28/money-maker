@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
+import org.ta4j.core.num.DoubleNum;
+
+import java.util.ArrayList;
 
 @Component
 @Slf4j
@@ -28,7 +31,7 @@ public class InstrumentCache {
 
     public BarSeries getOrCreateInstrumentData(String token) {
         try {
-            return cache.get(token, BaseBarSeries::new);
+            return cache.get(token, () -> new BaseBarSeries(token, new ArrayList<>(), DoubleNum.ZERO));
         } catch (Exception e) {
             log.error("Error getting/creating InstrumentData for token: {}", token, e);
             return null;

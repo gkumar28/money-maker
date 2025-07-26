@@ -26,4 +26,3 @@ scheduler:
   close-cron: "0 0 16 * * MON-FRI"
   open-cron: "0 0 9 * * MON-FRI"
   task-cron: "0 * * * * MON-FRI"
-  pool-size: 5

@@ -29,13 +29,13 @@ public class TickAggregatorServiceImpl implements TickAggregatorService {
 
     @Override
     public void processTick(Tick tick) {
-        log.debug("updated tick cache");
-        String token = tick.getInstrumentToken();
+        String token = tick.getSymbol();
 
         TickAggregator aggregator = tickAggregatorMap.get(token);
         if (null != aggregator) {
             aggregator.addTrade(tick.getVolume(), tick.getPrice());
         }
+        log.debug("updated tick cache in time: {} ms", Instant.now().toEpochMilli() - tick.getTimestamp());
     }
 
     @Override
