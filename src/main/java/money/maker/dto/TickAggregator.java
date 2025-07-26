@@ -7,24 +7,30 @@ import org.ta4j.core.num.Num;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.DoubleAccumulator;
+import java.util.concurrent.atomic.DoubleAdder;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
 @Getter
 public class TickAggregator {
 
-    private double open = 0;
-    private double high = Double.NEGATIVE_INFINITY;
-    private double low = Double.POSITIVE_INFINITY;
-    private double close = 0;
-    private double volume = 0;
-    private double amount = 0; // price * volume
-    private long trades = 0l;
-    private boolean initialized = false;
+    private final ZonedDateTime endTime;
+    private final Duration duration;
+    private final AtomicReference<Double> open = new AtomicReference<>(0.0);
+    private final DoubleAccumulator high = new DoubleAccumulator(Math::max, Double.NEGATIVE_INFINITY);
+    private final DoubleAccumulator low = new DoubleAccumulator(Math::max, Double.POSITIVE_INFINITY);
+    private final AtomicReference<Double> close = new AtomicReference<>(0.0);
+    private final DoubleAdder volume = new DoubleAdder();
+    private final DoubleAdder amount = new DoubleAdder();
+    private final LongAdder trades = new LongAdder();
+    private final AtomicReference<Boolean> initialized = new AtomicReference<>(false);
 
-    private final Function<Number, Num> numFunction;
 
-    public TickAggregator(Function<Number, Num> numFunction) {
-        this.numFunction = numFunction;
+    public TickAggregator(ZonedDateTime endTime, Duration duration) {
+        this.endTime = endTime;
+        this.duration = duration;
     }
 
     /**
@@ -34,56 +40,67 @@ public class TickAggregator {
      * @param tradePrice  Trade price (double)
      */
     public void addTrade(double tradeVolume, double tradePrice) {
-        if (!initialized) {
-            open = tradePrice;
-            high = tradePrice;
-            low = tradePrice;
-            close = tradePrice;
-            initialized = true;
-        } else {
-            if (tradePrice > high) high = tradePrice;
-            if (tradePrice < low)  low = tradePrice;
-            close = tradePrice;
+        if (Boolean.FALSE.equals(initialized.get())) {
+            updateOpen(tradePrice);
         }
 
-        volume += tradeVolume;
-        amount += tradePrice * tradeVolume;
-        trades++;
+        initialized.set(true);
+        updateClose(tradePrice);
+        updateHigh(tradePrice);
+        updateLow(tradePrice);
+        updateVolume(tradePrice);
+        updateAmount(tradePrice, tradeVolume);
+        updateTrades();
     }
 
     /**
      * Convert current state to a Ta4j Bar.
      *
-     * @param endTime  The bar's end time
-     * @param duration The bar's duration
+     * @param numFunction  function to convert double to Ta4j Num class
      * @return BaseBar instance
      */
-    public Bar asBar(ZonedDateTime endTime, Duration duration) {
-        if (!initialized) {
+    public Bar asBar(Function<Number, Num> numFunction) {
+        if (Boolean.FALSE.equals(initialized.get())) {
             return new BaseBar(duration, endTime, numFunction);
         }
 
         return new BaseBar(
             duration,
             endTime,
-            numFunction.apply(open),
-            numFunction.apply(high),
-            numFunction.apply(low),
-            numFunction.apply(close),
-            numFunction.apply(volume),
-            numFunction.apply(amount),
-            trades
+            numFunction.apply(open.get()),
+            numFunction.apply(high.get()),
+            numFunction.apply(low.get()),
+            numFunction.apply(close.get()),
+            numFunction.apply(volume.sum()),
+            numFunction.apply(amount.sum())
         );
     }
 
-    public void reset() {
-        open = 0;
-        high = Double.NEGATIVE_INFINITY;
-        low = Double.POSITIVE_INFINITY;
-        close = 0;
-        volume = 0;
-        amount = 0;
-        trades = 0;
-        initialized = false;
+    public void updateOpen(double price) {
+        open.set(price);
+    }
+
+    public void updateHigh(double price) {
+        high.accumulate(price);
+    }
+
+    public void updateLow(double price) {
+        low.accumulate(price);
+    }
+
+    public void updateClose(double price) {
+        close.set(price);
+    }
+
+    public void updateVolume(double price) {
+        volume.add(price);
+    }
+
+    public void updateAmount(double price, double volume) {
+        amount.add(price * volume);
+    }
+
+    private void updateTrades() {
+        trades.add(1);
     }
 }
