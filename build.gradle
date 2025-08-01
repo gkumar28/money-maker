@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.trade.bot'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17' // or 21 if using latest JDK
+sourceCompatibility = '17'
 
 repositories {
     mavenCentral()
@@ -48,6 +48,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.core:jackson-core'
     implementation 'com.google.guava:guava:33.0.0-jre'
+
+    // testing
+    testImplementation platform('org.junit:junit-bom:5.11.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
 dependencyManagement {
