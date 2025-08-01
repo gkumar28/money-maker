@@ -4,7 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.4'
 }
 
-group = 'com.trade.bot'
+group = 'com.money.maker'
 version = '0.0.1'
 sourceCompatibility = '17'
 
@@ -67,4 +67,24 @@ test {
 
 bootRun {
     systemProperties = System.properties
+}
+
+// For use in github pipelines only
+def getProjectName() {
+    return rootProject.name
+}
+
+def getProjectVersion() {
+    return project.version.toString()
+}
+
+tasks.register('printName') {
+    doLast {
+        println getProjectName()
+    }
+}
+tasks.register('printVersion') {
+    doLast {
+        println getProjectVersion()
+    }
 }
