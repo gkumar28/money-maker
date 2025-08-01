@@ -46,28 +46,17 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
-      - name: Get latest Git tag
-        id: get_latest_tag
-        run: |
-          git fetch --tags
-          LATEST_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-
-      - name: Compare version with latest tag
-        id: compare_versions
+      - name: Check tag exists
         env:
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
-          LATEST_TAG: ${{ steps.get_latest_tag.outputs.latest_tag }}
+        id: check_tag
         run: |
-          echo "App version: $APP_VERSION"
-          echo "Latest tag: $LATEST_TAG"
-
-          if [ "v$APP_VERSION" != "$LATEST_TAG" ]; then
-            echo "version_changed=true" >> $GITHUB_OUTPUT
-            echo "Version changed: creating new tag"
-          else
+          if git ls-remote --tags origin | grep -q "refs/tags/v$APP_VERSION"; then
+            echo "Version exists: skipping tag creation"
             echo "version_changed=false" >> $GITHUB_OUTPUT
-            echo "Version unchanged: skipping tag creation"
+          else
+            echo "Version changed: creating new tag"
+            echo "version_changed=true" >> $GITHUB_OUTPUT
           fi
           
       - name: Create and push new Git tag
