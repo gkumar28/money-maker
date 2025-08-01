@@ -7,6 +7,4 @@ import org.ta4j.core.TradingRecord;
 public interface TradingStrategy {
 
     Strategy build(BarSeries barSeries);
-
-    TradingRecord backTest(BarSeries barSeries);
 }
