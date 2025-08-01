@@ -1,3 +1,4 @@
+#!/bin/sh
 
 echo "🚀 Starting Spring Boot Application"
 echo "🔧 App Name: $APP_NAME"
