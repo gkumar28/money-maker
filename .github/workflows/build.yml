@@ -101,6 +101,7 @@ jobs:
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
         if: steps.check_tag.outputs.version_changed == 'true'
         run: |
-          RENDER_CURL="$RENDER_DEPLOY_HOOK&imgURL=docker.io%2F$DOCKER_USERNAME%2F$APP_NAME%3Av$APP_VERSION"
+          RENDER_URL=$(printf "%s&imgURL=docker.io%%2F%s%%2F%s%%3Av%s" \
+            "$RENDER_DEPLOY_HOOK" "$DOCKER_USERNAME" "$APP_NAME" "$APP_VERSION")
           echo "$RENDER_CURL"
           curl -X POST "$RENDER_CURL"
