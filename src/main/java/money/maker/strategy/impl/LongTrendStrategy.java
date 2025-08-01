@@ -8,8 +8,6 @@ import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseStrategy;
 import org.ta4j.core.Rule;
 import org.ta4j.core.Strategy;
-import org.ta4j.core.TradingRecord;
-import org.ta4j.core.backtest.BarSeriesManager;
 import org.ta4j.core.indicators.EMAIndicator;
 import org.ta4j.core.indicators.MACDIndicator;
 import org.ta4j.core.indicators.RSIIndicator;
@@ -63,11 +61,5 @@ public class LongTrendStrategy implements TradingStrategy {
             );
 
         return new BaseStrategy("LongTrend", entryRule, exitRule);
-    }
-
-    @Override
-    public TradingRecord backTest(BarSeries barSeries) {
-        BarSeriesManager barSeriesManager = new BarSeriesManager(barSeries);
-        return barSeriesManager.run(build(barSeries));
     }
 }
