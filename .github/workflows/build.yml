@@ -40,6 +40,12 @@ jobs:
           APP_VERSION=$(./gradlew -q printVersion)
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
 
+      - name: login to Git and pull latest tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
       - name: Get latest Git tag
         id: get_latest_tag
         run: |
@@ -68,10 +74,7 @@ jobs:
         env:
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
         run: |
-          echo "Creating and pushing tag $APP_VERSION"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          echo "Creating and pushing tag v$APP_VERSION"
           git tag "v$APP_VERSION"
           git push origin "v$APP_VERSION"
 
