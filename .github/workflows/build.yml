@@ -96,7 +96,7 @@ jobs:
       - name: Trigger deploy on Render
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-          DOCKER_USERNAME: $${{ secrets.DOCKER_USERNAME }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           APP_NAME: ${{ steps.get_name.outputs.app_name }}
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
         if: steps.check_tag.outputs.version_changed == 'true'
