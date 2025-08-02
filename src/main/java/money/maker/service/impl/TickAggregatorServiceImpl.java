@@ -53,7 +53,8 @@ public class TickAggregatorServiceImpl implements TickAggregatorService {
 
             if (null == oldAggregator) {
                 tickAggregatorMap.computeIfAbsent(symbol, k -> newAggregator);
-            } else if (tickAggregatorMap.replace(symbol, oldAggregator, newAggregator)) {
+            } else if (tickAggregatorMap.replace(symbol, oldAggregator, newAggregator) &&
+                !oldAggregator.isEmpty()) {
                 instrumentCache.updateInstrument(
                     symbol,
                     oldAggregator.asBar(DoubleNum::valueOf));
