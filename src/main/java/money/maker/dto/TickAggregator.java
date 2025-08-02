@@ -115,4 +115,8 @@ public class TickAggregator {
     public void updateTrades() {
         trades.add(1);
     }
+
+    public boolean isEmpty() {
+        return 0 == trades.sum();
+    }
 }
