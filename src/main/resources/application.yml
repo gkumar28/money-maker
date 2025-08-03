@@ -6,6 +6,17 @@ spring:
   application:
     name: money-maker
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,loggers,info
+  endpoint:
+    health:
+      show-details: always
+    loggers:
+      enabled: true
+
 logging:
   level:
     root: INFO
