@@ -17,7 +17,7 @@ public class ThreadConfig {
         return scheduler;
     }
 
-    @Bean
+    @Bean("taskExecutor")
     public ThreadPoolTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         threadPoolTaskExecutor.setCorePoolSize(4);
