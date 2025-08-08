@@ -1,7 +1,5 @@
 package money.maker.cache;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -11,37 +9,31 @@ import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.num.DoubleNum;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class InstrumentCache {
 
-    private final Cache<String, BarSeries> cache = CacheBuilder.newBuilder()
-        .maximumSize(1000)
-        .build();
+    private final ConcurrentHashMap<String, BarSeries> cache = new ConcurrentHashMap<>();
 
     public void clearCache() {
-        cache.invalidateAll();
+        cache.clear();
     }
 
-    public BarSeries get(String key) {
-        return cache.getIfPresent(key);
-    }
-
-    public BarSeries getOrCreateInstrumentData(String token) {
-        try {
-            BarSeries barSeries = cache.get(token, () -> new BaseBarSeries(token, new ArrayList<>(), DoubleNum.ZERO));
+    public BarSeries get(String token) {
+        return cache.computeIfAbsent(token,
+            k -> {
+            BarSeries barSeries = new BaseBarSeries(token, new ArrayList<>(), DoubleNum.ZERO);
             barSeries.setMaximumBarCount(100);
+
             return barSeries;
-        } catch (Exception e) {
-            log.error("Error getting/creating InstrumentData for token: {}", token, e);
-            return null;
-        }
+        });
     }
 
     public void updateInstrument(String token, Bar bar) {
-        BarSeries instrumentData = getOrCreateInstrumentData(token);
+        BarSeries instrumentData = get(token);
         instrumentData.addBar(bar);
     }
 

@@ -16,4 +16,10 @@ public class CacheApiController implements CacheApi {
     public ResponseEntity<BarSeries> getCacheData(String key) {
         return ResponseEntity.ok(instrumentCache.get(key));
     }
+
+    @Override
+    public ResponseEntity<String> clearCacheData() {
+        instrumentCache.clearCache();
+        return ResponseEntity.ok("cache cleared successfully");
+    }
 }
