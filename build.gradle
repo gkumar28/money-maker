@@ -21,8 +21,10 @@ dependencies {
     // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // data
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // compilation only
     compileOnly 'org.projectlombok:lombok'
@@ -35,13 +37,9 @@ dependencies {
     // tick processing
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
     implementation("com.lmax:disruptor:3.4.2")
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // Email alerting (optional)
     implementation 'org.springframework.boot:spring-boot-starter-mail'
-
-    // Database (optional - H2 or PostgreSQL)
-    runtimeOnly 'com.h2database:h2'
 
     // common
     implementation 'org.apache.commons:commons-lang3:3.18.0'

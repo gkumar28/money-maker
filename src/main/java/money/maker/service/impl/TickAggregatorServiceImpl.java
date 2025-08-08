@@ -7,6 +7,7 @@ import money.maker.component.Portfolio;
 import money.maker.config.external.BarConfiguration;
 import money.maker.dto.Tick;
 import money.maker.dto.TickAggregator;
+import money.maker.service.RedisService;
 import money.maker.service.TickAggregatorService;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.num.DoubleNum;
@@ -23,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TickAggregatorServiceImpl implements TickAggregatorService {
 
     private final BarConfiguration barConfiguration;
-    private final InstrumentCache instrumentCache;
     private final Portfolio portfolio;
+    private final RedisService redisService;
     private final ConcurrentHashMap<String, TickAggregator> tickAggregatorMap = new ConcurrentHashMap<>();
 
     @Override
@@ -55,9 +56,7 @@ public class TickAggregatorServiceImpl implements TickAggregatorService {
                 tickAggregatorMap.computeIfAbsent(symbol, k -> newAggregator);
             } else if (tickAggregatorMap.replace(symbol, oldAggregator, newAggregator) &&
                 !oldAggregator.isEmpty()) {
-                instrumentCache.updateInstrument(
-                    symbol,
-                    oldAggregator.asBar(DoubleNum::valueOf));
+                redisService.updateInstrument(symbol, oldAggregator.asBar(DoubleNum::valueOf));
             }
         }
     }
