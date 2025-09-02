@@ -9,6 +9,7 @@ import money.maker.dto.Tick;
 import money.maker.dto.TickAggregator;
 import money.maker.service.RedisService;
 import money.maker.service.TickAggregatorService;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.num.DoubleNum;
 
@@ -29,6 +30,7 @@ public class TickAggregatorServiceImpl implements TickAggregatorService {
     private final ConcurrentHashMap<String, TickAggregator> tickAggregatorMap = new ConcurrentHashMap<>();
 
     @Override
+    @Async("taskExecutor")
     public void processTick(Tick tick) {
         String token = tick.getSymbol();
 

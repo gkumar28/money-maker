@@ -11,6 +11,8 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 
 import static money.maker.constant.ApplicationConstants.BAR;
+import static money.maker.constant.ApplicationConstants.DELIMITER_DOT;
+import static money.maker.constant.ApplicationConstants.NEW;
 
 @Configuration
 @RequiredArgsConstructor
@@ -31,7 +33,7 @@ public class RedisConfig {
 
         for (String instrument: portfolio.getInstruments()) {
             container.addMessageListener(barDataMessageListenerAdapter,
-                new ChannelTopic(String.join(".", "new", BAR, instrument)));
+                new ChannelTopic(String.join(DELIMITER_DOT, NEW, BAR, instrument)));
         }
         return container;
     }
