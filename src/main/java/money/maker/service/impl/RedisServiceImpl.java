@@ -7,7 +7,6 @@ import money.maker.config.external.BarConfiguration;
 import money.maker.service.RedisService;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
@@ -24,6 +23,8 @@ import java.util.Set;
 
 import static money.maker.constant.ApplicationConstants.BAR;
 import static money.maker.constant.ApplicationConstants.DATA;
+import static money.maker.constant.ApplicationConstants.NEW;
+import static money.maker.constant.ApplicationConstants.TICK;
 import static money.maker.constant.ApplicationConstants.TIMESTAMP;
 
 @Service
@@ -34,6 +35,17 @@ public class RedisServiceImpl implements RedisService {
     private final BarConfiguration barConfiguration;
     private final InstrumentCache instrumentCache;
     private final StringRedisTemplate redisTemplate;
+
+
+    @Override
+    public String getNewBarData(String instrument, ZonedDateTime timestamp) {
+        return (String) redisTemplate.opsForHash().get(getNewBarKey(instrument), timestamp.toString());
+    }
+
+    @Override
+    public String getNewTickData(String instrument, ZonedDateTime timestamp) {
+        return (String) redisTemplate.opsForHash().get(getNewTickKey(instrument), timestamp.toString());
+    }
 
     @Override
     public BarSeries initInstrument(String instrument, int barCount) {
@@ -70,15 +82,6 @@ public class RedisServiceImpl implements RedisService {
         redisTemplate.convertAndSend(channel, timestamp);
     }
 
-    @Override
-    @Async("taskExecutor")
-    public void onNewBarUpdate(String instrument, String timestamp) {
-        String value = (String) redisTemplate.opsForHash().get(getKey(BAR, DATA, instrument), timestamp);
-        if (null != value) {
-            instrumentCache.updateInstrument(instrument, fromCsvString(timestamp, value));
-        }
-    }
-
     private String toCsvString(Bar bar) {
         return String.format("%.5f,%.5f,%.5f,%.5f,%.2f,%.2f",
             bar.getOpenPrice().doubleValue(),
@@ -104,7 +107,15 @@ public class RedisServiceImpl implements RedisService {
         );
     }
 
-    private String getKey(String keySpace, String subKeySpace, String instrument) {
-        return String.join(".", keySpace, subKeySpace, instrument);
+    private String getNewTickKey(String key) {
+        return getKey(TICK, NEW, key);
+    }
+
+    private String getNewBarKey(String key) {
+        return getKey(BAR, NEW, key);
+    }
+
+    private String getKey(String keySpace, String subKeySpace, String key) {
+        return String.join(".", keySpace, subKeySpace, key);
     }
 }
