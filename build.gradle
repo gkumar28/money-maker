@@ -17,53 +17,26 @@ ext {
     set('springBootVersion', '3.2.5')
 }
 
-dependencies {
-    // Spring Boot Core
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
 
-    // data
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    group = rootProject.group
+    version = rootProject.version
 
-    // compilation only
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    // For technical analysis
-    implementation 'org.ta4j:ta4j-core:0.17'
-    implementation("org.ejml:ejml-all:0.41")
-
-    // tick processing
-    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-    implementation("com.lmax:disruptor:3.4.2")
-
-    // Email alerting (optional)
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-
-    // common
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.core:jackson-core'
-    implementation 'com.google.guava:guava:33.0.0-jre'
-
-    // testing
-    testImplementation platform('org.junit:junit-bom:5.11.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    repositories {
+        mavenCentral()
     }
-}
 
-test {
-    useJUnitPlatform()
-}
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
 
-bootRun {
-    systemProperties = System.properties
+    test {
+        useJUnitPlatform()
+    }
 }
 
 // For use in github pipelines only
