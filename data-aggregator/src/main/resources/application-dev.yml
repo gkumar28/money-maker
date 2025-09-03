@@ -1,0 +1,11 @@
+logging:
+  level:
+    root: INFO
+    data.aggregator: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
+
+
+scheduler:
+  task-cron: "0 * * * * ?"
+  task-cron-interval: 60 # seconds
