@@ -1,0 +1,19 @@
+logging:
+  level:
+    data.emitter: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
+
+websocket:
+  configuration:
+    uri: ws://localhost:60001
+    reconnect-timeout: 3000
+
+scheduler:
+  connect-auto: true
+
+dev:
+  enable: true
+  websocket:
+    server:
+      port: 60001
