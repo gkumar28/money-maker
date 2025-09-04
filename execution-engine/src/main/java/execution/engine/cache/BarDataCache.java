@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class InstrumentCache {
+public class BarDataCache {
 
     private final ConcurrentHashMap<String, BarSeries> cache = new ConcurrentHashMap<>();
     private final RedisService redisService;
@@ -26,15 +26,16 @@ public class InstrumentCache {
             k -> {
             // get last 10 bars excluding current
             BarSeries barSeries = redisService.getNBars(instrument, 10, 1);
-            barSeries.setMaximumBarCount(100);
+            barSeries.setMaximumBarCount(50);
 
             return barSeries;
         });
     }
 
-    public void updateInstrument(String instrument, Bar bar) {
+    public BarSeries updateAndGetInstrument(String instrument, Bar bar) {
         BarSeries instrumentData = get(instrument);
         instrumentData.addBar(bar);
+        return instrumentData;
     }
 
 

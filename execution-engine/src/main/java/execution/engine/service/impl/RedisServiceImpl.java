@@ -11,7 +11,6 @@ import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.num.DecimalNum;
-import org.ta4j.core.num.DoubleNum;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -80,7 +79,7 @@ public class RedisServiceImpl implements RedisService {
             return new BaseBar(
                 Duration.of(barConfiguration.getTimeFrame(), ChronoUnit.SECONDS),
                 endTime,
-                DoubleNum::valueOf);
+                DecimalNum::valueOf);
         }
 
         String[] parts = barEventValue.split(",");
@@ -104,7 +103,7 @@ public class RedisServiceImpl implements RedisService {
             return new BaseBar(
                 Duration.of(barConfiguration.getTimeFrame(), ChronoUnit.SECONDS),
                 endTime,
-                DoubleNum::valueOf);
+                DecimalNum::valueOf);
         }
         return fromCsvString(data.toString(), endTime);
     }
