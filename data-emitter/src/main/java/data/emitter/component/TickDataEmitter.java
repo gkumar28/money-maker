@@ -26,17 +26,23 @@ public class TickDataEmitter {
 
         try (JsonParser parser = jsonFactory.createParser(message)) {
             String instrument = "";
+            double price = 0.0;
             while (!parser.isClosed()) {
                 JsonToken token = parser.nextToken();
 
                 if (JsonToken.FIELD_NAME.equals(token) && "symbol".equals(parser.getCurrentName())) {
                     parser.nextToken();
                     instrument = parser.getValueAsString();
-                    break;
+                }
+
+                if (JsonToken.FIELD_NAME.equals(token) && "price".equals(parser.getCurrentName())) {
+                    parser.nextToken();
+                    price = parser.getValueAsDouble();
                 }
             }
 
             if (portfolio.getInstruments().contains(instrument)) {
+                redisService.updateInstrumentPrice(instrument, price);
                 redisService.raiseTickEvent(instrument, message);
             }
         }
