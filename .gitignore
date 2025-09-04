@@ -6,6 +6,7 @@
 
 # build folder
 build/
+build-outputs/
 
 # Compiled class file
 *.class
