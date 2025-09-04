@@ -3,3 +3,9 @@ include 'broker-integrator'
 include 'data-aggregator'
 include 'execution-engine'
 include 'data-emitter'
+
+gradle.beforeProject { Project project ->
+    if (project != rootProject) {
+        project.layout.buildDirectory.set(project.rootProject.layout.projectDirectory.dir("build-outputs/${project.name}"))
+    }
+}

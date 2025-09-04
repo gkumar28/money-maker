@@ -63,7 +63,7 @@ public class RedisServiceImpl implements RedisService {
 
     public BarSeries getNBars(String instrument, int n, int offset) {
         String timestampKey = getKey(TIMESTAMP, instrument);
-        Set<String> timestamps = redisTemplate.opsForZSet().reverseRange(timestampKey, offset, n - 1L + offset);
+        Set<String> timestamps = redisTemplate.opsForZSet().range(timestampKey, offset, n - 1L + offset);
 
         if (null == timestamps) {
             return new BaseBarSeries();
