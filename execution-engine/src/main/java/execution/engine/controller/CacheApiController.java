@@ -1,7 +1,7 @@
 package execution.engine.controller;
 
 
-import execution.engine.cache.InstrumentCache;
+import execution.engine.cache.BarDataCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +16,12 @@ import java.util.List;
 @Slf4j
 public class CacheApiController implements CacheApi {
 
-    private final InstrumentCache instrumentCache;
+    private final BarDataCache barDataCache;
 
 
     @Override
     public ResponseEntity<List<Bar>> getInstrumentData(String instrument) {
-        BarSeries result = instrumentCache.get(instrument);
+        BarSeries result = barDataCache.get(instrument);
         if (result.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
