@@ -15,4 +15,5 @@ public class SignalState {
     private TradeSignal signal;
     private ZonedDateTime timestamp;
     private BigDecimal price;
+    private String strategyName;
 }
