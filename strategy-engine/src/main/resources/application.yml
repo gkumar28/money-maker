@@ -4,7 +4,7 @@ server:
 
 spring:
   application:
-    name: execution-engine
+    name: strategy-engine
   data:
     redis:
       host: localhost
@@ -27,3 +27,6 @@ logging:
     execution.engine: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
+
+bar:
+  time-frame: 60

@@ -1,8 +1,9 @@
 rootProject.name = 'money-maker'
 include 'broker-integrator'
-include 'data-aggregator'
-include 'execution-engine'
 include 'data-emitter'
+include 'data-aggregator'
+include 'strategy-engine'
+include 'execution-engine'
 
 gradle.beforeProject { Project project ->
     if (project != rootProject) {
