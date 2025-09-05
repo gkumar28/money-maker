@@ -15,12 +15,12 @@ public class TradeSignalCache {
 
     private final ConcurrentHashMap<String, SignalState> cache;
 
-    public SignalState get(String instrument) {
-        return cache.computeIfAbsent(instrument, key -> new SignalState(TradeSignal.HOLD, ZonedDateTime.now(), null));
+    public SignalState get(String instrument, String strategyName) {
+        return cache.computeIfAbsent(instrument, key -> new SignalState(TradeSignal.HOLD, ZonedDateTime.now(), null, strategyName));
     }
 
-    public void update(String instrument, TradeSignal signal, ZonedDateTime timestamp, BigDecimal price) {
-        SignalState state = new SignalState(signal, timestamp, price);
+    public void update(String instrument, TradeSignal signal, ZonedDateTime timestamp, BigDecimal price, String strategyName) {
+        SignalState state = new SignalState(signal, timestamp, price, strategyName);
         cache.put(instrument, state);
     }
 }
