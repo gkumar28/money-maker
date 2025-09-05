@@ -1,6 +1,6 @@
 package strategy.engine.constant.enums;
 
-public enum TradeSignal {
+public enum TradeDirection {
 
     ENTRY,
     HOLD,

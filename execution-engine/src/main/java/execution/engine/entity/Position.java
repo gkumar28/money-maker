@@ -1,21 +1,32 @@
 package execution.engine.entity;
 
-import execution.engine.constant.enums.OrderStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Entity
 @Table(name = "positions")
+@Data
+@NoArgsConstructor
 public class Position {
+
+    public Position(String instrument) {
+        this.setInstrument(instrument);
+        this.setQuantity(BigDecimal.ZERO);
+        this.setAverageEntryPrice(BigDecimal.ZERO);
+        this.setRealizedProfit(BigDecimal.ZERO);
+        this.setOpenedAt(ZonedDateTime.now(ZoneId.of("UTC")).toOffsetDateTime());
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,9 +50,8 @@ public class Position {
     @Column
     private OffsetDateTime closedAt;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private OrderStatus status;
-
+    public boolean isOpen() {
+        return null == this.getClosedAt();
+    }
 }
 
