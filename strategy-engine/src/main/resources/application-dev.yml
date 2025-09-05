@@ -1,3 +1,6 @@
 logging:
   level:
     execution.engine: DEBUG
+
+bar:
+  time-frame: 60
