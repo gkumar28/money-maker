@@ -11,20 +11,21 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "orders")
+@Data
+@NoArgsConstructor
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column
-    private String strategy;
 
     @Column
     private String instrument;
@@ -41,12 +42,12 @@ public class Order {
     private BigDecimal quantity;
 
     @Column(precision = 19, scale = 5)
-    private BigDecimal limitPrice;
+    private BigDecimal expectedPrice;
 
     @Enumerated(EnumType.STRING)
     @Column
     private OrderStatus status;
 
     @Column
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 }
