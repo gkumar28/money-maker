@@ -1,6 +1,14 @@
 logging:
   level:
-    execution.engine: DEBUG
+    strategy.engine: DEBUG
+    strategy.engine.indicator: TRACE
+    strategy.engine.rule: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: mappings
 
 bar:
   time-frame: 60

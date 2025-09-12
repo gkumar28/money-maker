@@ -3,6 +3,7 @@ package strategy.engine.strategy;
 import lombok.Data;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.Strategy;
+import strategy.engine.schemaobject.SignalDto;
 
 @Data
 public abstract class TradingStrategy {
@@ -12,17 +13,10 @@ public abstract class TradingStrategy {
 
     protected TradingStrategy(BarSeries barSeries) {
         this.barSeries = barSeries;
+        build();
     }
 
-    public abstract void build();
+    protected abstract void build();
 
-    public abstract boolean shouldEnter();
-
-    public abstract boolean shouldExit();
-
-    protected void isReady(String strategyName) throws IllegalStateException {
-        if (null == strategy) {
-            throw new IllegalStateException(String.format("%s is not yet built.", strategyName));
-        }
-    }
+    public abstract SignalDto evaluate(int index);
 }
