@@ -1,8 +1,6 @@
 logging:
   level:
     strategy.engine: DEBUG
-    strategy.engine.indicator: TRACE
-    strategy.engine.rule: TRACE
 
 management:
   endpoints:

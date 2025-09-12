@@ -33,6 +33,12 @@ public class MarketDataServiceImpl implements MarketDataService {
     private final RestTemplate restTemplate;
 
     @Override
+    public BarSeries loadHistoricalData(String instrument, LocalDate fromDate, LocalDate toDate) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        return loadHistoricalData(instrument, dateTimeFormatter.format(fromDate), dateTimeFormatter.format(toDate));
+    }
+
+    @Override
     public BarSeries loadHistoricalData(String instrument, String fromDate, String toDate) {
         List<String[]> rangeChunks = chunkDateRange(fromDate, toDate);
         BarSeries barSeries = new BaseBarSeries(instrument);
@@ -45,6 +51,12 @@ public class MarketDataServiceImpl implements MarketDataService {
 
         barSeries.setMaximumBarCount(barSeries.getBarCount());
         return barSeries;
+    }
+
+    @Override
+    public List<Map<String, Object>> loadRawData(String instrument, LocalDate fromDate, LocalDate toDate) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        return loadRawData(instrument, dateTimeFormatter.format(fromDate), dateTimeFormatter.format(toDate));
     }
 
     @Override
