@@ -1,5 +1,6 @@
 package strategy.engine.strategy.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.indicators.ATRIndicator;
 import org.ta4j.core.indicators.helpers.LowPriceIndicator;
 import org.ta4j.core.indicators.helpers.LowestValueIndicator;
@@ -28,6 +29,7 @@ import strategy.engine.util.StrategyEngineUtils;
 
 import java.math.BigDecimal;
 
+@Slf4j
 public class LongTrendStrategy extends TradingStrategy {
 
     private ATRIndicator atr;
@@ -97,12 +99,14 @@ public class LongTrendStrategy extends TradingStrategy {
         TradeDirection tradeDirection;
         BigDecimal confidence;
 
-        if (normalizedEntry.compareTo(new BigDecimal("0.5")) > 0) {
+        if (shouldEnter) {
             tradeDirection = TradeDirection.BUY;
             confidence = normalizedEntry;
-        } else if (normalizedExit.compareTo(new BigDecimal("0.5")) > 0) {
+            logDebugMessage("ENTRY", index, confidence);
+        } else if (shouldExit) {
             tradeDirection = TradeDirection.SELL;
             confidence = normalizedExit;
+            logDebugMessage("EXIT", index, confidence);
         } else {
             tradeDirection = null;
             confidence = normalizedHold;
@@ -116,6 +120,12 @@ public class LongTrendStrategy extends TradingStrategy {
             atrValue,
             adx
         );
+    }
+
+    private void logDebugMessage(String signal, int index, BigDecimal confidence) {
+        if (log.isDebugEnabled()) {
+            log.debug("{} at index {} with confidence {}", signal, index, confidence);
+        }
     }
 
     private BigDecimal calculateEntryStrength(int index) {
