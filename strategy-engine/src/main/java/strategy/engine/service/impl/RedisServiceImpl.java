@@ -1,9 +1,8 @@
 package strategy.engine.service.impl;
 
-import org.springframework.data.redis.core.RedisOperations;
-import org.springframework.data.redis.core.SessionCallback;
 import strategy.engine.config.external.BarConfiguration;
-import strategy.engine.schemaobject.SignalState;
+import strategy.engine.schemaobject.SignalDto;
+import strategy.engine.schemaobject.StrategyOrderDto;
 import strategy.engine.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +14,7 @@ import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.num.DecimalNum;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -29,6 +29,7 @@ import java.util.Set;
 import static strategy.engine.constant.ApplicationConstants.BAR;
 import static strategy.engine.constant.ApplicationConstants.DATA;
 import static strategy.engine.constant.ApplicationConstants.DELIMITER_DOT;
+import static strategy.engine.constant.ApplicationConstants.ORDER;
 import static strategy.engine.constant.ApplicationConstants.SIGNAL;
 import static strategy.engine.constant.ApplicationConstants.TIMESTAMP;
 
@@ -81,42 +82,42 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public void raiseSignalEvent(String instrument, SignalState signalState) {
+    public void raiseSignalEvent(String instrument, SignalDto signalDto) {
         String channelName = getKey(SIGNAL, instrument);
-        String value = toSignalString(signalState);
-        redisTemplate.execute(new SessionCallback<Void>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public <K, V> Void execute(RedisOperations<K, V> operations) {
-                operations.watch((K) channelName);
-
-                String existing = (String) operations.opsForValue().get((K) channelName);
-                if (!value.equals(existing)) {
-                    operations.multi();
-                    operations.opsForValue().set((K) channelName, (V) value);
-                    List<Object> result = operations.exec();
-
-                    if (!result.isEmpty()) {
-                        redisTemplate.convertAndSend(channelName, value);
-                        log.debug("Signal updated and published for {}", channelName);
-                    } else {
-                        log.warn("Signal update failed due to concurrent modification: {}", channelName);
-                    }
-                } else {
-                    operations.unwatch();
-                    log.debug("Signal unchanged, not publishing for {}", channelName);
-                }
-
-                return null;
-            }
-        });
+        String value = toSignalString(signalDto);
+        redisTemplate.convertAndSend(channelName, value);
     }
 
-    private String toSignalString(SignalState signalState) {
+    @Override
+    public void raiseOrderEvent(StrategyOrderDto strategyOrderDto) {
+        String channelName = getKey(ORDER, strategyOrderDto.getInstrument());
+        String value = toSizedOrderString(strategyOrderDto);
+        redisTemplate.convertAndSend(channelName, value);
+    }
+
+    private String toSignalString(SignalDto signalDto) {
         return String.format("%s,%d,%s",
-            signalState.getSignal(),
-            Instant.from(signalState.getTimestamp()).toEpochMilli(),
-            signalState.getPrice().toPlainString());
+            signalDto.getDirection(),
+            Instant.from(signalDto.getTimestamp()).toEpochMilli(),
+            signalDto.getPrice().toPlainString());
+    }
+
+    private String toSizedOrderString(StrategyOrderDto strategyOrderDto) {
+        return String.format("%s,%d,%s,%d,%s,%s,%s,%s,%s",
+            strategyOrderDto.getInstrument(),
+            strategyOrderDto.getTimestamp().toInstant().toEpochMilli(),
+            strategyOrderDto.getDirection().name(),
+            strategyOrderDto.getQuantity(),
+            valueOrEmpty(strategyOrderDto.getPrice()),
+            valueOrEmpty(strategyOrderDto.getSlPrice()),
+            valueOrEmpty(strategyOrderDto.getTpPrice()),
+            valueOrEmpty(strategyOrderDto.getSignalStrength()),
+            valueOrEmpty(strategyOrderDto.getCapitalAllocated())
+        );
+    }
+
+    private static String valueOrEmpty(BigDecimal val) {
+        return val != null ? val.toPlainString() : "";
     }
 
     private Bar fromCsvString(String barEventValue, ZonedDateTime endTime) {

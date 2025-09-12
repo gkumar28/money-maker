@@ -1,4 +1,4 @@
-package strategy.engine.Indicator;
+package strategy.engine.indicator;
 
 import org.ejml.simple.SimpleMatrix;
 import org.ta4j.core.BarSeries;
@@ -49,9 +49,6 @@ public class KallmanIndicator extends CachedIndicator<Num> {
         pStates[0] = SimpleMatrix.identity(2);
     }
 
-    /**
-     * Map logical bar index to cache index by modulo
-     */
     private int cacheIndex(int logicalIndex) {
         return logicalIndex % cacheSize;
     }
@@ -97,8 +94,9 @@ public class KallmanIndicator extends CachedIndicator<Num> {
         SimpleMatrix pNew = (identity.minus(kallman.mult(measurement))).mult(pPred);
 
         // Cache new states
-        xStates[index] = xNew;
-        pStates[index] = pNew;
+        int currentCacheIndex = cacheIndex(index);
+        xStates[currentCacheIndex] = xNew;
+        pStates[currentCacheIndex] = pNew;
 
         // Return filtered price (first element of state vector)
         return priceIndicator.numOf(xNew.get(0, 0));
@@ -118,12 +116,17 @@ public class KallmanIndicator extends CachedIndicator<Num> {
             sumSq += val * val;
         }
         double mean = sum / count;
-        double variance = (sumSq - (mean * mean)) / count;
-        return variance < 1e-6 ? 0.001 : variance;
+        double variance = (sumSq - (mean * mean) * count) / (count - 1);
+        return Math.max(variance, 1e-2);
     }
 
     @Override
     public synchronized Num getValue(int index) {
+        if (index == 0) {
+            return priceIndicator.numOf(xStates[cacheIndex(index)].get(0, 0));
+        }
+
+        calculate(index);
         return priceIndicator.numOf(xStates[cacheIndex(index)].get(0, 0));
     }
 
@@ -139,6 +142,6 @@ public class KallmanIndicator extends CachedIndicator<Num> {
 
     @Override
     public Num numOf(Number number) {
-        return null;
+        return priceIndicator.numOf(number);
     }
 }

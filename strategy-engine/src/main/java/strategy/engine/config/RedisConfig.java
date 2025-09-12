@@ -1,6 +1,5 @@
 package strategy.engine.config;
 
-import strategy.engine.component.Portfolio;
 import strategy.engine.listener.BarDataHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -9,6 +8,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
+import strategy.engine.service.PortfolioService;
 
 import static strategy.engine.constant.ApplicationConstants.BAR;
 import static strategy.engine.constant.ApplicationConstants.DELIMITER_DOT;
@@ -18,7 +18,7 @@ import static strategy.engine.constant.ApplicationConstants.NEW;
 @RequiredArgsConstructor
 public class RedisConfig {
 
-    private final Portfolio portfolio;
+    private final PortfolioService portfolioService;
 
     @Bean
     public MessageListenerAdapter barDataMessageListenerAdapter(BarDataHandler barDataHandler) {
@@ -31,7 +31,7 @@ public class RedisConfig {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
 
-        for (String instrument: portfolio.getInstruments()) {
+        for (String instrument: portfolioService.getInstruments()) {
             container.addMessageListener(barDataMessageListenerAdapter,
                 new ChannelTopic(String.join(DELIMITER_DOT, NEW, BAR, instrument)));
         }

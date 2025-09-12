@@ -1,11 +1,9 @@
 package strategy.engine.cache;
 
-import strategy.engine.constant.enums.TradeSignal;
-import strategy.engine.schemaobject.SignalState;
+import strategy.engine.schemaobject.SignalDto;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,13 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 public class TradeSignalCache {
 
-    private final ConcurrentHashMap<String, SignalState> cache;
+    private final ConcurrentHashMap<String, SignalDto> cache = new ConcurrentHashMap<>();
 
-    public SignalState get(String instrument) {
-        return cache.computeIfAbsent(instrument, key -> new SignalState(TradeSignal.HOLD, ZonedDateTime.now(), null));
+    public SignalDto get(String instrument) {
+        return cache.computeIfAbsent(instrument, key -> new SignalDto(null, ZonedDateTime.now()));
     }
 
-    public void update(String instrument, SignalState newState) {
+    public void update(String instrument, SignalDto newState) {
         cache.put(instrument, newState);
     }
 }

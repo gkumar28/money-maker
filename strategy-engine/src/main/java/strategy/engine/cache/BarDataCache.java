@@ -32,9 +32,10 @@ public class BarDataCache {
         });
     }
 
-    public void updateInstrument(String instrument, Bar bar) {
+    public BarSeries updateAndGetInstrument(String instrument, Bar bar) {
         BarSeries instrumentData = get(instrument);
         instrumentData.addBar(bar);
+        return instrumentData;
     }
 
 
