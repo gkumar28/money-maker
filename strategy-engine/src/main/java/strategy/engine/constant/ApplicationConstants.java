@@ -10,4 +10,5 @@ public class ApplicationConstants {
     public static final String TIMESTAMP = "timestamp";
     public static final String SIGNAL = "signal";
     public static final String DELIMITER_DOT = ".";
+    public static final String ORDER = "order";
 }

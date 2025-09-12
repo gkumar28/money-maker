@@ -1,6 +1,8 @@
 package strategy.engine.listener;
 
-import strategy.engine.service.BarService;
+import org.ta4j.core.Bar;
+import strategy.engine.service.RedisService;
+import strategy.engine.service.SignalGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -10,14 +12,16 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class BarDataHandler {
 
-    private final BarService barService;
+    private final RedisService redisService;
+    private final SignalGenerationService signalGenerationService;
 
     public void handleMessage(String message, String channel) {
         try {
             String instrument = extractInstrumentName(channel);
 
             log.debug("received new bar event for instrument {} : {}", instrument, message);
-            barService.onNewBarEvent(instrument, message);
+            Bar bar = redisService.getBar(instrument, message);
+            signalGenerationService.onNewBarEvent(instrument, bar);
         } catch (Exception exception) {
             log.error("error while processing bar for channel {} : {} ", channel, message);
         }

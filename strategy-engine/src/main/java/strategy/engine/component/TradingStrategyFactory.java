@@ -22,7 +22,6 @@ public class TradingStrategyFactory {
             throw new IllegalArgumentException("Unknown strategy");
         }
 
-        strategy.build();
         return strategy;
     }
 }

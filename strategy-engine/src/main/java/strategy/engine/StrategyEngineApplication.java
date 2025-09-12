@@ -1,5 +1,6 @@
 package strategy.engine;
 
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import strategy.engine.config.external.BarConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,14 +10,12 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
 @EnableAsync
 @EnableScheduling
 @EnableConfigurationProperties({
     BarConfiguration.class,
 })
-@EntityScan(basePackages = "execution.engine.entity")
-@EnableJpaRepositories(basePackages = "execution.engine.repository")
+@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
 public class StrategyEngineApplication {
 
     public static void main(String[] args) {
