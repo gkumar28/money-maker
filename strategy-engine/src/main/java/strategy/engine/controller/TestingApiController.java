@@ -7,12 +7,10 @@ import org.springframework.stereotype.Controller;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseBarSeries;
-import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.reports.TradingStatement;
 import strategy.engine.component.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
-import strategy.engine.indicator.KallmanIndicator;
 import strategy.engine.schemaobject.BarDataDto;
 import strategy.engine.schemaobject.SignalDto;
 import strategy.engine.schemaobject.StrategyOrderDto;
@@ -22,15 +20,12 @@ import strategy.engine.service.MarketDataService;
 import strategy.engine.service.PositionManagementService;
 import strategy.engine.strategy.TradingStrategy;
 
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -100,27 +95,11 @@ public class TestingApiController implements TestingApi {
 
     @Override
     public ResponseEntity<Object> getData(String instrument, LocalDate fromDate, LocalDate toDate) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        return ResponseEntity.ok(marketDataService.loadRawData(instrument, dateTimeFormatter.format(fromDate), dateTimeFormatter.format(toDate)));
+        return ResponseEntity.ok(marketDataService.loadRawData(instrument, fromDate, toDate));
     }
 
     @Override
     public ResponseEntity<Object> getKallmanPrediction(String instrument, LocalDate fromDate, LocalDate toDate) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        BarSeries barSeries = marketDataService.loadHistoricalData(instrument, dateTimeFormatter.format(fromDate), dateTimeFormatter.format(toDate));
-        barSeries.setMaximumBarCount(barSeries.getBarCount());
-        ClosePriceIndicator close = new ClosePriceIndicator(barSeries);
-        KallmanIndicator kallman = new KallmanIndicator(close, 0.1, 5);
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (int i=0;i< barSeries.getBarCount();i++) {
-            Map<String, Object> data = new HashMap<>();
-            data.put("closePrice", close.getValue(i).bigDecimalValue());
-            data.put("kallmanPrice", kallman.getValue(i).bigDecimalValue());
-            data.put("% value", close.getValue(i).bigDecimalValue().divide(kallman.getValue(i).bigDecimalValue(), 2, RoundingMode.HALF_UP));
-
-            result.add(data);
-        }
-
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(backtestService.getIndicatorValues(instrument, fromDate, toDate));
     }
 }
