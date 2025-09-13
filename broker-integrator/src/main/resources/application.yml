@@ -7,8 +7,8 @@ spring:
     name: broker-integrator
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${redis-host:localhost}
+      port: ${redis-port:6379}
 
 management:
   endpoints:
@@ -30,7 +30,7 @@ logging:
 
 broker:
   kite:
-    api-key: "key"
-    api-secret: "secret"
+    api-key: ENC(nrsjscTL+Im0KidtdH3Q5IjS/lsr0/leAwKc/5O91PJj/Cktn6X3/A==)
+    api-secret: ENC(frPi7mtUvvZPCTAP2OP8A/Qoo8ihr8QZNWorKJqQsOxBACCOhDo8kYduOLnpBnFKVja1eWd+RhU=)
 
 
