@@ -30,7 +30,7 @@ public class PositionServiceImpl implements PositionService {
     @Override
     public Position getOrCreateOpenPosition(String instrument) {
         return positionRepository
-            .findByInstrumentAndOpen(instrument, true)
+            .findByInstrumentAndClosedAtIsNull(instrument)
             .orElseGet(() -> new Position(instrument));
     }
 

@@ -9,5 +9,5 @@ import java.util.Optional;
 @Repository
 public interface PositionRepository extends JpaRepository<Position, Long> {
 
-    Optional<Position> findByInstrumentAndOpen(String instrument, boolean open);
+    Optional<Position> findByInstrumentAndClosedAtIsNull(String instrument);
 }

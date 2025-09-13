@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 public class TradeSignalCache {
 
-    private final ConcurrentHashMap<String, SignalState> cache;
+    private final ConcurrentHashMap<String, SignalState> cache = new ConcurrentHashMap<>();
 
     public SignalState get(String instrument) {
         return cache.computeIfAbsent(instrument, key -> new SignalState(TradeSignal.HOLD, ZonedDateTime.now(), null));
