@@ -24,9 +24,6 @@ dependencies {
     implementation 'org.ta4j:ta4j-core:0.17'
     implementation("org.ejml:ejml-all:0.41")
 
-    // tick processing
-    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-
     // Email alerting (optional)
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
@@ -51,7 +48,7 @@ bootRun {
 
 // For use in github pipelines only
 def getProjectName() {
-    return rootProject.name
+    return project.name
 }
 
 def getProjectVersion() {
