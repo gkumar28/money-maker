@@ -16,15 +16,15 @@ jobs:
       matrix:
         service:
           - name: broker-integrator
-            render_hook: ${{ secrets.RENDER_DEPLOY_HOOK_SERVICE_A }}
+            deploy_hook_secret: RENDER_DEPLOY_HOOK_BROKER_INTEGRATOR
           - name: data-aggregator
-            render_hook: ${{ secrets.RENDER_DEPLOY_HOOK_SERVICE_B }}
+            deploy_hook_secret: RENDER_DEPLOY_HOOK_DATA_AGGREGATOR
           - name: data-emitter
-            render_hook: ${{ secrets.RENDER_DEPLOY_HOOK_SERVICE_C }}
+            deploy_hook_secret: RENDER_DEPLOY_HOOK_DATA_EMITTER
           - name: execution-engine
-            render_hook: ${{ secrets.RENDER_DEPLOY_HOOK_SERVICE_D }}
+            deploy_hook_secret: RENDER_DEPLOY_HOOK_EXECUTION_ENGINE
           - name: strategy-engine
-            render_hook: ${{ secrets.RENDER_DEPLOY_HOOK_SERVICE_E }}
+            deploy_hook_secret: RENDER_DEPLOY_HOOK_STRATEGY_ENGINE
 
 
     steps:
@@ -59,6 +59,18 @@ jobs:
           APP_VERSION=$(./gradlew -q -p ${{ matrix.service.name }} printVersion)
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
 
+      - name: Get Deploy Hook URL
+        id: get_deploy_hook
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets[matrix.service.deploy_hook_secret] }}
+        run: |
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "Warning: Secret '${{ matrix.service.deploy_hook_secret }}' not set."
+            echo "url=" >> $GITHUB_OUTPUT
+          else
+            echo "url=$DEPLOY_HOOK_URL" >> $GITHUB_OUTPUT
+          fi
+
       - name: login to Git
         run: |
           git config user.name "github-actions[bot]"
@@ -71,7 +83,7 @@ jobs:
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
         id: check_tag
         run: |
-          if git ls-remote --tags origin | grep -q "refs/tags/APP_NAME-v$APP_VERSION"; then
+          if git ls-remote --tags origin | grep -q "refs/tags/$APP_NAME-v$APP_VERSION"; then
             echo "Version exists: skipping tag creation"
             echo "version_changed=false" >> $GITHUB_OUTPUT
           else
@@ -114,13 +126,13 @@ jobs:
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
         run: docker push ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:v$APP_VERSION
 
-#      - name: Trigger deploy on Render
-#        env:
-#          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-#          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-#          APP_NAME: ${{ steps.get_name.outputs.app_name }}
-#          APP_VERSION: ${{ steps.get_version.outputs.app_version }}
-#        if: steps.check_tag.outputs.version_changed == 'true'
-#        run: |
-#          RENDER_CURL="$RENDER_DEPLOY_HOOK&imgURL=docker.io%2F$DOCKER_USERNAME%2F$APP_NAME%3Av$APP_VERSION"
-#          curl -X POST "$RENDER_CURL"
+      - name: Trigger deploy on Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ steps.get_deploy_hook.outputs.url }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          APP_NAME: ${{ steps.get_name.outputs.app_name }}
+          APP_VERSION: ${{ steps.get_version.outputs.app_version }}
+        if: steps.check_tag.outputs.version_changed == 'true' && steps.get_deploy_hook.outputs.url != ''
+        run: |
+          RENDER_CURL="$RENDER_DEPLOY_HOOK&imgURL=docker.io%2F$DOCKER_USERNAME%2F$APP_NAME%3Av$APP_VERSION"
+          curl -X POST "$RENDER_CURL"
