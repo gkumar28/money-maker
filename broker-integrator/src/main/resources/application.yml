@@ -1,0 +1,36 @@
+server:
+  port: ${port:8080}
+  shutdown: GRACEFUL
+
+spring:
+  application:
+    name: broker-integrator
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,loggers,info
+  endpoint:
+    health:
+      show-details: always
+    loggers:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    data.aggregator: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
+
+broker:
+  kite:
+    api-key: "key"
+    api-secret: "secret"
+
+
