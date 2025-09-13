@@ -20,22 +20,14 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // For technical analysis
-    implementation 'org.ta4j:ta4j-core:0.17'
-    implementation("org.ejml:ejml-all:0.41")
 
     // tick processing
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-    implementation("com.lmax:disruptor:3.4.2")
-
-    // Email alerting (optional)
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     // common
     implementation 'org.apache.commons:commons-lang3:3.18.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.core:jackson-core'
-    implementation 'com.google.guava:guava:33.0.0-jre'
 
     // testing
     testImplementation platform('org.junit:junit-bom:5.11.0')
@@ -52,7 +44,7 @@ bootRun {
 
 // For use in github pipelines only
 def getProjectName() {
-    return rootProject.name
+    return project.name
 }
 
 def getProjectVersion() {

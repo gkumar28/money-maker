@@ -48,7 +48,7 @@ bootRun {
 
 // For use in github pipelines only
 def getProjectName() {
-    return rootProject.name
+    return project.name
 }
 
 def getProjectVersion() {
