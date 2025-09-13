@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface FillRepository extends JpaRepository<Long, Fill> {
+public interface FillRepository extends JpaRepository<Fill, Long> {
 }
