@@ -22,6 +22,10 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public void raiseConnectedEvent(String broker, String accessToken) {
         BrokerContext context = new BrokerContext(broker, CONNECTED, accessToken);
-        redisTemplate.convertAndSend(String.join(DELIMITER_DOT, BROKER, LIFECYCLE), context);
+        redisTemplate.convertAndSend(String.join(DELIMITER_DOT, BROKER, LIFECYCLE), toCsvString(context));
+    }
+
+    private String toCsvString(BrokerContext brokerContext) {
+        return String.format("%s,%s,%s", brokerContext.getClient(), brokerContext.getEvent(), brokerContext.getAccessToken());
     }
 }
