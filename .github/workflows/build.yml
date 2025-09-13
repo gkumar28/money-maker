@@ -98,7 +98,7 @@ jobs:
           fi
           
       - name: Create and push new Git tag
-        if: steps.check_tag.outputs.version_changed == 'true'
+        #if: steps.check_tag.outputs.version_changed == 'true'
         env:
           APP_NAME: ${{ steps.get_name.outputs.app_name }}
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
@@ -108,14 +108,14 @@ jobs:
           git push origin "$APP_NAME-v$APP_VERSION"
 
       - name: Log in to Docker Hub
-        if: steps.check_tag.outputs.version_changed == 'true'
+        #if: steps.check_tag.outputs.version_changed == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        if: steps.check_tag.outputs.version_changed == 'true'
+        #if: steps.check_tag.outputs.version_changed == 'true'
         env:
           APP_NAME: ${{ steps.get_name.outputs.app_name }}
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
@@ -125,14 +125,17 @@ jobs:
             --build-arg APP_NAME=$APP_NAME \
             --build-arg APP_VERSION=$APP_VERSION \
             --build-arg PORT=$PORT \
-            -t ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:v$APP_VERSION .
+            -t ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:v$APP_VERSION \
+            -t ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:latest .
 
       - name: Push Docker image
-        if: steps.check_tag.outputs.version_changed == 'true'
+        #if: steps.check_tag.outputs.version_changed == 'true'
         env:
           APP_NAME: ${{ steps.get_name.outputs.app_name }}
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:v$APP_VERSION
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:v$APP_VERSION
+          docker push ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:latest
 
       - name: Trigger deploy on Render
         env:
