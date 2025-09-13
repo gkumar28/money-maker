@@ -18,14 +18,19 @@ jobs:
         service:
           - name: broker-integrator
             deploy_hook_secret: RENDER_DEPLOY_HOOK_BROKER_INTEGRATOR
+            port: 8080
           - name: data-aggregator
             deploy_hook_secret: RENDER_DEPLOY_HOOK_DATA_AGGREGATOR
+            port: 8081
           - name: data-emitter
             deploy_hook_secret: RENDER_DEPLOY_HOOK_DATA_EMITTER
+            port: 8082
           - name: execution-engine
             deploy_hook_secret: RENDER_DEPLOY_HOOK_EXECUTION_ENGINE
+            port: 8083
           - name: strategy-engine
             deploy_hook_secret: RENDER_DEPLOY_HOOK_STRATEGY_ENGINE
+            port: 8084
 
 
     steps:
@@ -114,10 +119,12 @@ jobs:
         env:
           APP_NAME: ${{ steps.get_name.outputs.app_name }}
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
+          PORT: ${{ matrix.service.port }}
         run: |
           docker build --platform=linux/amd64 \
             --build-arg APP_NAME=$APP_NAME \
             --build-arg APP_VERSION=$APP_VERSION \
+            --build-arg PORT=$PORT \
             -t ${{ secrets.DOCKER_USERNAME }}/$APP_NAME:v$APP_VERSION .
 
       - name: Push Docker image
