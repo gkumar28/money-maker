@@ -6,6 +6,10 @@ ARG APP_NAME
 ARG APP_VERSION
 ARG PORT
 
+#labels
+LABEL org.opencontainers.image.version=$APP_VERSION
+LABEL org.opencontainers.image.source="https://github.com/gkumar28/money-maker"
+
 # Set environment variables for runtime
 ENV APP_NAME=${APP_NAME}
 ENV APP_VERSION=${APP_VERSION}
