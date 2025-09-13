@@ -38,10 +38,6 @@ test {
     useJUnitPlatform()
 }
 
-bootRun {
-    systemProperties = System.properties
-}
-
 // For use in github pipelines only
 def getProjectName() {
     return project.name
