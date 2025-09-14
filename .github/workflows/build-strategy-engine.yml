@@ -1,0 +1,19 @@
+name: Build Strategy Engine
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - strategy-engine/**
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      service: strategy-engine
+      port: 8084

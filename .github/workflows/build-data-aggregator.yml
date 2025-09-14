@@ -1,0 +1,19 @@
+name: Build Data Aggregator
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - data-aggregator/**
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      service: data-aggregator
+      port: 8081

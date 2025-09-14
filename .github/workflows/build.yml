@@ -1,8 +1,13 @@
-name: Build and Tag All Application
+name: Build and Tag Application
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+      port:
+        required: true
+        type: string
 
 permissions:
   actions: write
@@ -12,26 +17,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      max-parallel: 1
-      matrix:
-        service:
-          - name: broker-integrator
-            port: 8080
-          - name: data-aggregator
-            port: 8081
-          - name: data-emitter
-            port: 8082
-          - name: execution-engine
-            port: 8083
-          - name: strategy-engine
-            port: 8084
-
-
     steps:
       - name: init log
         run: |
-          echo "Starting build process for ${{ matrix.service.name }}"
+          echo "Starting build process for ${{ inputs.service }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,13 +34,13 @@ jobs:
       - name: Get app name
         id : get_name
         run: |
-          APP_NAME=$(./gradlew -q -p ${{ matrix.service.name }} printName)
+          APP_NAME=$(./gradlew -q -p ${{ inputs.service }} printName)
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
 
       - name: Get app version
         id: get_version
         run: |
-          APP_VERSION=$(./gradlew -q -p ${{ matrix.service.name }} printVersion)
+          APP_VERSION=$(./gradlew -q -p ${{ inputs.service }} printVersion)
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
 
       - name: login to Git
@@ -86,14 +75,14 @@ jobs:
 
       - name: Build fat JAR
         if: steps.check_tag.outputs.version_changed == 'true'
-        run: ./gradlew -p ${{ matrix.service.name }} clean bootJar
+        run: ./gradlew -p ${{ inputs.service }} clean bootJar
 
       - name: Build Docker image
         if: steps.check_tag.outputs.version_changed == 'true'
         env:
           APP_NAME: ${{ steps.get_name.outputs.app_name }}
           APP_VERSION: ${{ steps.get_version.outputs.app_version }}
-          PORT: ${{ matrix.service.port }}
+          PORT: ${{ inputs.port }}
         run: |
           docker build --platform=linux/amd64 \
             --build-arg APP_NAME=$APP_NAME \
@@ -120,3 +109,9 @@ jobs:
           echo "Creating and pushing tag $APP_NAME-v$APP_VERSION"
           git tag "$APP_NAME-v$APP_VERSION"
           git push origin "$APP_NAME-v$APP_VERSION"
+
+  call_deploy_workflow:
+    needs: build
+    uses: ./.github/workflows/deploy.yml
+    with:
+      service: ${{ inputs.service }}
