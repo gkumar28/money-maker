@@ -36,7 +36,7 @@ jobs:
         run: |
           get-service-id() {
             case "$1" in
-            broker-integrator) echo "svc_abc123" ;;
+            broker-integrator) echo "da4439d2-96c5-4428-ab83-6c487720a6b1" ;;
             *)
             echo "Error: Unknown service '$1'" >&2
             exit 1
