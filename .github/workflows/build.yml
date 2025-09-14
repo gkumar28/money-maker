@@ -42,12 +42,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
-
-      - name: Build fat JAR
-        run: ./gradlew -p ${{ matrix.service.name }} clean bootJar
-
       - name: Get app name
         id : get_name
         run: |
@@ -64,7 +58,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
+
+      - name: Log in to Docker Hub
+        if: steps.check_tag.outputs.version_changed == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Check tag exists
         env:
@@ -80,12 +81,11 @@ jobs:
             echo "version_changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Log in to Docker Hub
-        if: steps.check_tag.outputs.version_changed == 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Build fat JAR
+        run: ./gradlew -p ${{ matrix.service.name }} clean bootJar
 
       - name: Build Docker image
         if: steps.check_tag.outputs.version_changed == 'true'
