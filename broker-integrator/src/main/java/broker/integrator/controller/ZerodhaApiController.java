@@ -1,11 +1,19 @@
 package broker.integrator.controller;
 
 import broker.integrator.component.ZerodhaClient;
+import broker.integrator.schemaobject.Bar;
+import broker.integrator.service.MarketDataService;
 import broker.integrator.service.RedisService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static broker.integrator.constant.ApplicationConstant.ZERODHA;
 
@@ -15,6 +23,7 @@ import static broker.integrator.constant.ApplicationConstant.ZERODHA;
 public class ZerodhaApiController implements ZerodhaApi {
 
     private final RedisService redisService;
+    private final MarketDataService marketDataService;
     private final ZerodhaClient zerodhaClient;
 
     @Override
@@ -28,4 +37,61 @@ public class ZerodhaApiController implements ZerodhaApi {
         redisService.raiseConnectedEvent(ZERODHA, accessToken);
         return ResponseEntity.ok("login successful");
     }
+
+    @Override
+    public ResponseEntity<List<Bar>> getHistoricalData(String instrument, LocalDateTime from, LocalDateTime to, String interval) {
+        return ResponseEntity.ok(marketDataService.getHistoricalData(instrument, from, to, interval));
+    }
+
+    @Override
+    public void getHistoricalDataCsv(HttpServletResponse response, String instrument, LocalDateTime from, LocalDateTime to, String interval) {
+        response.setContentType("text/csv");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"data.csv\"");
+        PrintWriter writer = null;
+        try {
+            writer = response.getWriter();
+            LocalDateTime start = from;
+
+            writer.println("Timestamp,Open,High,Low,Close,Volume,Open Interest");
+            while (!start.isAfter(to)) {
+                LocalDateTime end = start.plusYears(1).minusSeconds(1);
+
+                if (end.isAfter(to)) {
+                    end = to;
+                }
+
+                List<Bar> data = marketDataService.getHistoricalData(instrument, start, end, interval);
+                for (Bar bar: data) {
+                    writer.println(convertToCsv(bar));
+                }
+
+                writer.flush();
+                start = end.plusSeconds(1);
+            }
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            if (writer != null) {
+                writer.println("Error generating CSV: " + e.getMessage());
+                writer.flush();
+            }
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
+    }
+
+    private String convertToCsv(Bar bar) {
+        return String.format("%s,%.2f,%.2f,%.2f,%.2f,%d,%d",
+                bar.getTimeStamp() != null ? bar.getTimeStamp() : "",
+                bar.getOpen(),
+                bar.getHigh(),
+                bar.getLow(),
+                bar.getClose(),
+                bar.getVolume(),
+                bar.getOi()
+            );
+    }
+
+
 }
