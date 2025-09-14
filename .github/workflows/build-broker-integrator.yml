@@ -1,0 +1,20 @@
+name: Build Broker Integrator
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - broker-integrator/**
+
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      service: broker-integrator
+      port: 8080

@@ -1,0 +1,19 @@
+name: Build Data Emitter
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - data-emitter/**
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      service: data-emitter
+      port: 8082
