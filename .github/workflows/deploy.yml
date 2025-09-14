@@ -2,7 +2,7 @@ name: Deploy Application if new tag found
 on:
   push:
     tags:
-      - 'broker-integator-v*' # for now deploying only broker-integrator
+      - 'broker-integrator-v*' # for now deploying only broker-integrator
 
 permissions:
   actions: write
