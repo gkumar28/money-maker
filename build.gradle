@@ -39,12 +39,12 @@ subprojects {
         useJUnitPlatform()
     }
 
-    tasks.register('printName') {
+    tasks.register('printUsedName') {
         doLast {
             println project.name
         }
     }
-    tasks.register('printVersion') {
+    tasks.register('printUsedVersion') {
         doLast {
             println project.version
         }
