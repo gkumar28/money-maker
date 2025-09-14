@@ -40,11 +40,15 @@ jobs:
             echo "svc_id=" >> $GITHUB_OUTPUT
           fi
         
+      - name: Install Railway CLI
+        run: |
+          curl -sSL https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
 
       - name: Deploy to Railway
         if: steps.get_svc_id.outputs.svc_id != ''
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/railwayapp/cli:latest
-          options: --env SVC_ID=${{ steps.get_svc_id.outputs.svc_id }} --env RAILWAY_TOKEN=${{ secrets.RAILWAY_TOKEN }}
-          run: railway up --service=$SVC_ID
+        env:
+          SVC_ID: ${{ steps.get_svc_id.outputs.svc_id }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service=$SVC_ID
