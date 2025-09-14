@@ -1,3 +1,13 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.5'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+repositories {
+    mavenCentral()
+}
+
 version='0.0.2'
 
 dependencies {
@@ -28,4 +38,28 @@ dependencies {
     // testing
     testImplementation platform('org.junit:junit-bom:5.11.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// For use in github pipelines only
+def getProjectName() {
+    return project.name
+}
+
+def getProjectVersion() {
+    return project.version.toString()
+}
+
+tasks.register('printName') {
+    doLast {
+        println getProjectName()
+    }
+}
+tasks.register('printVersion') {
+    doLast {
+        println getProjectVersion()
+    }
 }
