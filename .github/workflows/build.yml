@@ -115,3 +115,7 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       service: ${{ inputs.service }}
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

@@ -17,3 +17,8 @@ jobs:
     with:
       service: execution-engine
       port: 8083
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      GH_PAT: ${{ secrets.GH_PAT }}
