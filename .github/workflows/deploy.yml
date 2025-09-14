@@ -5,6 +5,12 @@ on:
       service:
         required: true
         type: string
+    DOCKER_USERNAME:
+      required: true
+    DOCKER_PASSWORD:
+      required: true
+    RAILWAY_TOKEN:
+      required: true
 
 permissions:
   actions: write

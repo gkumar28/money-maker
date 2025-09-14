@@ -8,6 +8,15 @@ on:
       port:
         required: true
         type: string
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+      RAILWAY_TOKEN:
+        required: true
+      GH_PAT:
+        required: true
 
 permissions:
   actions: write
