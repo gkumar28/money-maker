@@ -20,12 +20,7 @@ public class MarketDataServiceImpl implements MarketDataService {
 
     @Override
     public List<Bar> getHistoricalData(String instrument, LocalDateTime from, LocalDateTime to, String interval) {
-        //return zerodhaClient.getHistoricalData(instrument, from, to, interval, true, true);
-
-        Bar bar = new Bar();
-        bar.setTimeStamp("timestamp");
-        return List.of(bar);
-
+        return zerodhaClient.getHistoricalData(instrument, from, to, interval, true, true);
     }
 
     private long estimatePoints(LocalDateTime from, LocalDateTime to, Duration interval) {
