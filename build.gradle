@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.money.maker'
-version = '0.0.1'
+version = '0'
 sourceCompatibility = '17'
 
 repositories {
@@ -37,24 +37,15 @@ subprojects {
     test {
         useJUnitPlatform()
     }
-}
 
-// For use in github pipelines only
-def getProjectName() {
-    return rootProject.name
-}
-
-def getProjectVersion() {
-    return project.version.toString()
-}
-
-tasks.register('printName') {
-    doLast {
-        println getProjectName()
+    tasks.register('printName') {
+        doLast {
+            println project.name
+        }
     }
-}
-tasks.register('printVersion') {
-    doLast {
-        println getProjectVersion()
+    tasks.register('printVersion') {
+        doLast {
+            println project.version
+        }
     }
 }
