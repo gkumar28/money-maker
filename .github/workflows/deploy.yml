@@ -51,4 +51,4 @@ jobs:
           SVC_ID: ${{ steps.get_svc_id.outputs.svc_id }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway up --service=$SVC_ID
+          railway redeploy --service=$SVC_ID --yes

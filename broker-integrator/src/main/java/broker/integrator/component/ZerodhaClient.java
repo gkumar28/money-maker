@@ -52,6 +52,9 @@ public class ZerodhaClient {
         try {
             User user = kiteConnect.generateSession(requestToken, apiSecret);
             this.userModel = user;
+            kiteConnect.setAccessToken(userModel.accessToken);
+            kiteConnect.setPublicToken(userModel.publicToken);
+
             return user.accessToken;
         } catch (Exception | KiteException exception) {
             log.error("User login failed", exception);
