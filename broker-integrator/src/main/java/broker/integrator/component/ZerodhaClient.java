@@ -7,7 +7,9 @@ import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 import com.zerodhatech.models.HistoricalData;
 import com.zerodhatech.models.User;
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,8 @@ import java.util.List;
 @Component
 @Slf4j
 @RequiredArgsConstructor
+@Getter
+@Setter
 public class ZerodhaClient {
 
     @Value("${broker.kite.api-key}")
@@ -48,19 +52,24 @@ public class ZerodhaClient {
         return kiteConnect.getLoginURL();
     }
 
-    public String getAccessToken(String requestToken) {
+    public void login(String requestToken) {
         try {
             User user = kiteConnect.generateSession(requestToken, apiSecret);
             this.userModel = user;
-            kiteConnect.setAccessToken(userModel.accessToken);
-            kiteConnect.setPublicToken(userModel.publicToken);
-
-            return user.accessToken;
+            setAuth(user.accessToken, user.publicToken);
         } catch (Exception | KiteException exception) {
             log.error("User login failed", exception);
         }
+    }
 
-        return null;
+    public void setAuth(String accessToken, String publicToken) {
+        kiteConnect.setAccessToken(accessToken);
+        kiteConnect.setPublicToken(publicToken);
+    }
+
+    public String getAccessToken(String requestToken) {
+        login(requestToken);
+        return userModel.accessToken;
     }
 
     public List<Bar> getHistoricalData(String instrument, LocalDateTime from, LocalDateTime to, String interval, boolean continuous, boolean openInterest) {
