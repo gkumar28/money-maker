@@ -1,10 +1,12 @@
 package broker.integrator.controller;
 
 import broker.integrator.schemaobject.Bar;
-import com.zerodhatech.models.HistoricalData;
+import com.zerodhatech.models.User;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -25,6 +27,12 @@ public interface ZerodhaApi {
                                                 @RequestParam("from") LocalDateTime from,
                                                 @RequestParam("to") LocalDateTime to,
                                                 @RequestParam("interval") String interval);
+
+    @GetMapping("/get-user")
+    ResponseEntity<User> getUser();
+
+    @PostMapping("/set-user")
+    ResponseEntity<Void> setUser(@RequestBody User user);
 
     @GetMapping("historical-data/csv")
     void getHistoricalDataCsv(HttpServletResponse response,

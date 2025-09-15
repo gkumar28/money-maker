@@ -4,6 +4,7 @@ import broker.integrator.component.ZerodhaClient;
 import broker.integrator.schemaobject.Bar;
 import broker.integrator.service.MarketDataService;
 import broker.integrator.service.RedisService;
+import com.zerodhatech.models.User;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,17 @@ public class ZerodhaApiController implements ZerodhaApi {
     @Override
     public ResponseEntity<List<Bar>> getHistoricalData(String instrument, LocalDateTime from, LocalDateTime to, String interval) {
         return ResponseEntity.ok(marketDataService.getHistoricalData(instrument, from, to, interval));
+    }
+
+    @Override
+    public ResponseEntity<User> getUser() {
+        return ResponseEntity.ok(zerodhaClient.getUserModel());
+    }
+
+    @Override
+    public ResponseEntity<Void> setUser(User user) {
+        zerodhaClient.setUserModel(user);
+        return ResponseEntity.noContent().build();
     }
 
     @Override
