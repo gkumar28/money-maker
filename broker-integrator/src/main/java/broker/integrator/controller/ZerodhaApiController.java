@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,11 +41,6 @@ public class ZerodhaApiController implements ZerodhaApi {
     }
 
     @Override
-    public ResponseEntity<List<Bar>> getHistoricalData(String instrument, LocalDateTime from, LocalDateTime to, String interval) {
-        return ResponseEntity.ok(marketDataService.getHistoricalData(instrument, from, to, interval));
-    }
-
-    @Override
     public ResponseEntity<User> getUser() {
         return ResponseEntity.ok(zerodhaClient.getUserModel());
     }
@@ -57,7 +53,7 @@ public class ZerodhaApiController implements ZerodhaApi {
     }
 
     @Override
-    public void getHistoricalDataCsv(HttpServletResponse response, String instrument, LocalDateTime from, LocalDateTime to, String interval) {
+    public void getHistoricalDataCsv(HttpServletResponse response, String instrument, String exchange, LocalDateTime from, LocalDateTime to, String interval) {
         response.setContentType("text/csv");
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"data.csv\"");
         PrintWriter writer = null;
@@ -67,13 +63,13 @@ public class ZerodhaApiController implements ZerodhaApi {
 
             writer.println("Timestamp,Open,High,Low,Close,Volume,Open Interest");
             while (!start.isAfter(to)) {
-                LocalDateTime end = start.plusYears(1).minusSeconds(1);
+                LocalDateTime end = start.plus(getMaxEndTime(interval));
 
                 if (end.isAfter(to)) {
                     end = to;
                 }
 
-                List<Bar> data = marketDataService.getHistoricalData(instrument, start, end, interval);
+                List<Bar> data = marketDataService.getHistoricalData(instrument, exchange, start, end, interval);
                 for (Bar bar: data) {
                     writer.println(convertToCsv(bar));
                 }
@@ -92,6 +88,14 @@ public class ZerodhaApiController implements ZerodhaApi {
                 writer.close();
             }
         }
+    }
+
+    private Duration getMaxEndTime(String interval) {
+        return switch (interval) {
+            case "minute" -> Duration.ofDays(60);
+            case "3minute", "5minute", "60minute" -> Duration.ofDays(100);
+            default -> Duration.ofDays(365);
+        };
     }
 
     private String convertToCsv(Bar bar) {

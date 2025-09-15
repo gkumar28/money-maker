@@ -22,12 +22,6 @@ public interface ZerodhaApi {
     @GetMapping("/redirect")
     ResponseEntity<String> redirect(@RequestParam("request_token") String requestToken);
 
-    @GetMapping("/historical-data")
-    ResponseEntity<List<Bar>> getHistoricalData(@RequestParam("instrument") String instrument,
-                                                @RequestParam("from") LocalDateTime from,
-                                                @RequestParam("to") LocalDateTime to,
-                                                @RequestParam("interval") String interval);
-
     @GetMapping("/get-user")
     ResponseEntity<User> getUser();
 
@@ -37,6 +31,7 @@ public interface ZerodhaApi {
     @GetMapping("historical-data/csv")
     void getHistoricalDataCsv(HttpServletResponse response,
                               @RequestParam("instrument") String instrument,
+                              @RequestParam("exchange") String exchange,
                               @RequestParam("from") LocalDateTime from,
                               @RequestParam("to") LocalDateTime to,
                               @RequestParam("interval") String interval);

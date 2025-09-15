@@ -1,10 +1,12 @@
 package broker.integrator.component;
 
 import broker.integrator.schemaobject.Bar;
+import broker.integrator.schemaobject.InstrumentDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 import com.zerodhatech.models.HistoricalData;
+import com.zerodhatech.models.Instrument;
 import com.zerodhatech.models.User;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -81,6 +83,25 @@ public class ZerodhaClient {
         } catch (IOException | KiteException exception) {
             log.error("historical-data fetch failed", exception);
         }
+        return List.of();
+    }
+
+    public List<InstrumentDto> getInstrumentList() {
+        try {
+            List<Instrument> instruments = kiteConnect.getInstruments();
+            return instruments.stream().map(instrument ->
+                InstrumentDto.builder()
+                    .instrumentToken(instrument.getInstrument_token())
+                    .exchangeToken(instrument.getExchange_token())
+                    .tradingSymbol(instrument.getTradingsymbol())
+                    .segment(instrument.getSegment())
+                    .exchange(instrument.getExchange())
+                    .build()
+            ).toList();
+        } catch (Exception | KiteException exception) {
+            log.error("Instrument master list fetch failed", exception);
+        }
+
         return List.of();
     }
 }
