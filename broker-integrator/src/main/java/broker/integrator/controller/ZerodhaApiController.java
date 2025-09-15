@@ -52,6 +52,7 @@ public class ZerodhaApiController implements ZerodhaApi {
     @Override
     public ResponseEntity<Void> setUser(User user) {
         zerodhaClient.setUserModel(user);
+        zerodhaClient.setAuth(user.accessToken, user.publicToken);
         return ResponseEntity.noContent().build();
     }
 
