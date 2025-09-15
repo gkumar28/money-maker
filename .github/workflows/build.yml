@@ -118,8 +118,12 @@ jobs:
           git tag "$APP_NAME-v$APP_VERSION"
           git push origin "$APP_NAME-v$APP_VERSION"
 
+    outputs:
+      version_changed: ${{ steps.check_tag.outputs.version_changed }}
+
   call_deploy_workflow:
     needs: build
+    if: needs.build.outputs.version_changed == 'true'
     uses: ./.github/workflows/deploy.yml
     with:
       service: ${{ inputs.service }}
