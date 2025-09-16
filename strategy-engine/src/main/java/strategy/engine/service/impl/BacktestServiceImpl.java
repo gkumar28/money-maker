@@ -17,9 +17,13 @@ import org.ta4j.core.reports.TradingStatementGenerator;
 import strategy.engine.component.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.indicator.KallmanIndicator;
+import strategy.engine.schemaobject.HoldingDto;
+import strategy.engine.schemaobject.PortfolioDto;
 import strategy.engine.schemaobject.SignalDto;
 import strategy.engine.schemaobject.StrategyOrderDto;
 import strategy.engine.schemaobject.TradeDto;
+import strategy.engine.schemaobject.TradingReport;
+import strategy.engine.schemaobject.TradingReportGenerator;
 import strategy.engine.schemaobject.analysis.ExtendedTradeExecutionModel;
 import strategy.engine.schemaobject.analysis.MultiPositionTradeOnNextOpenModel;
 import strategy.engine.schemaobject.analysis.MultiPositionTradingRecord;
@@ -38,6 +42,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -59,13 +64,24 @@ public class BacktestServiceImpl implements BacktestService {
     private final PositionManagementService positionManagementService;
     private final TradingStrategyFactory tradingStrategyFactory;
 
-
     @Override
-    public TradingStatement backtest(String instrument, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
+    public TradingReport backtest(List<String> instruments, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
         // 1. Load historical data for the instrument
         portfolioService.resetPortfolio(BigDecimal.valueOf(1000000));
         LocalDateTime from = fromDate.atTime(LocalTime.of(0, 0, 0));
         LocalDateTime to = toDate.atTime(LocalTime.of(23, 59, 59));
+        TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolioService.getPortfolio());
+        for (String instrument: instruments) {
+            TradingRecord tradingRecord = backtestPerInstrument(instrument, exchange, interval, from, to, strategyType);
+            if (null != tradingRecord) {
+                tradingReportGenerator.setTradingRecord(instrument, tradingRecord);
+            }
+        }
+
+        return tradingReportGenerator.generate();
+    }
+
+    private TradingRecord backtestPerInstrument(String instrument, String exchange, String interval, LocalDateTime from, LocalDateTime to, StrategyType strategyType) {
         Path dataFilePath = marketDataService.loadRawData(instrument, exchange, from, to, interval);
         try(Stream<String> lines = Files.lines(dataFilePath)) {
 
@@ -87,6 +103,7 @@ public class BacktestServiceImpl implements BacktestService {
 
                     if (strategyOrderDto.getQuantity() > 0) {
                         TradeDto executedOrder = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, DecimalNum.valueOf(strategyOrderDto.getQuantity()), asTradeType(strategyOrderDto.getDirection()));
+                        executedOrder.setTimestamp(bar.getEndTime().minus(bar.getTimePeriod()));
                         portfolioService.applyOrder(executedOrder);
                     }
                 }
@@ -94,12 +111,11 @@ public class BacktestServiceImpl implements BacktestService {
                 index++;
             }
 
-            return new TradingStatementGenerator().generate(null, tradingRecord, barSeries);
+            return tradingRecord;
         } catch (Exception exception) {
             log.error("Backtest failed", exception);
         }
-
-        return new TradingStatement(null, null, null);
+        return null;
     }
 
     private Duration getDuration(String interval) {

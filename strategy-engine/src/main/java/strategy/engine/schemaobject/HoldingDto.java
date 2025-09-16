@@ -9,8 +9,11 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class HoldingDto {
     private String instrument;
-    private int quantity;
-    private BigDecimal avgEntryPrice;
+    private int quantity = 0;
+    private BigDecimal avgEntryPrice = BigDecimal.ZERO;
+
+    private BigDecimal currentInvestedCapital = BigDecimal.ZERO;
+    private BigDecimal maxInvestedCapital = BigDecimal.ZERO;
 }
 
 

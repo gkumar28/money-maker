@@ -34,6 +34,8 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioDto.setAvailableCapital(newCapital);
         portfolioDto.setRealizedPnL(BigDecimal.ZERO);
         portfolioDto.setTotalCapital(newCapital);
+        portfolioDto.setCurrentInvestedCapital(BigDecimal.ZERO);
+        portfolioDto.setMaxInvestedCapital(BigDecimal.ZERO);
         portfolioDto.setLastUpdated();
     }
 
@@ -59,6 +61,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         return List.of("RELIANCE");
     }
 
+    @Override
+    public PortfolioDto getPortfolio() {
+        return portfolioDto;
+    }
+
     private void processBuy(TradeDto tradeDto) {
         String symbol = tradeDto.getInstrument();
         BigDecimal cost = tradeDto.getPrice().multiply(BigDecimal.valueOf(tradeDto.getQuantity()));
@@ -82,8 +89,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         holding.setQuantity(newQty);
         holding.setAvgEntryPrice(newTotalCost.divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP));
 
+        updateInvestedCapital(holding, cost);
         portfolioDto.getHoldings().put(symbol, holding);
         portfolioDto.setAvailableCapital(portfolioDto.getAvailableCapital().subtract(cost));
+
         portfolioDto.getTradeDtoList().add(tradeDto);
     }
 
@@ -94,9 +103,9 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         int sellQty = tradeDto.getQuantity();
         BigDecimal entryPrice = holding.getAvgEntryPrice();
-        BigDecimal sellValue = tradeDto.getPrice().multiply(BigDecimal.valueOf(sellQty));
+        BigDecimal value = tradeDto.getPrice().multiply(BigDecimal.valueOf(sellQty));
         BigDecimal buyCost = entryPrice.multiply(BigDecimal.valueOf(sellQty));
-        BigDecimal pnl = sellValue.subtract(buyCost);
+        BigDecimal pnl = value.subtract(buyCost);
 
         // Update holding
         holding.setQuantity(holding.getQuantity() - sellQty);
@@ -107,8 +116,20 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
 
         // Update capital and PnL
-        portfolioDto.setAvailableCapital(portfolioDto.getAvailableCapital().add(sellValue));
+        updateInvestedCapital(holding, value.multiply(BigDecimal.valueOf(-1)));
+        portfolioDto.setAvailableCapital(portfolioDto.getAvailableCapital().add(value));
         portfolioDto.setRealizedPnL(portfolioDto.getRealizedPnL().add(pnl));
         portfolioDto.getTradeDtoList().add(tradeDto);
+    }
+
+    private void updateInvestedCapital(HoldingDto holding, BigDecimal cost) {
+        holding.setCurrentInvestedCapital(holding.getCurrentInvestedCapital().add(cost));
+        if (holding.getCurrentInvestedCapital().compareTo(holding.getMaxInvestedCapital()) > 0) {
+            holding.setMaxInvestedCapital(holding.getCurrentInvestedCapital());
+        }
+        portfolioDto.setCurrentInvestedCapital(portfolioDto.getCurrentInvestedCapital().add(cost));
+        if (portfolioDto.getCurrentInvestedCapital().compareTo(portfolioDto.getMaxInvestedCapital()) > 0) {
+            portfolioDto.setMaxInvestedCapital(portfolioDto.getCurrentInvestedCapital());
+        }
     }
 }

@@ -85,6 +85,7 @@ public class MultiPositionTradingRecord implements TradingRecord {
         return true;
     }
 
+    @Override
     public boolean exit(int index, Num price, Num amount) {
         if (null == price || null == amount || price.isZero() || amount.isZero()) {
             return false;
@@ -189,7 +190,6 @@ public class MultiPositionTradingRecord implements TradingRecord {
     public Integer getEndIndex() {
         return this.endIndex;
     }
-
 
     private void recordTrade(Trade trade, boolean isEntry) {
         Objects.requireNonNull(trade, "Trade should not be null");

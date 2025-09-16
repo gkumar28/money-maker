@@ -1,6 +1,8 @@
 package strategy.engine.schemaobject;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +20,6 @@ public class TradeDto {
     private int quantity;
     private BigDecimal price;
     private int index;
-
+    private ZonedDateTime timestamp;
 }
 

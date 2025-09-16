@@ -1,6 +1,7 @@
 package strategy.engine.service;
 
 import strategy.engine.schemaobject.HoldingDto;
+import strategy.engine.schemaobject.PortfolioDto;
 import strategy.engine.schemaobject.TradeDto;
 
 import java.math.BigDecimal;
@@ -18,4 +19,6 @@ public interface PortfolioService {
     HoldingDto getCurrentHoldings(String instrument);
 
     List<String> getInstruments();
+
+    PortfolioDto getPortfolio();
 }

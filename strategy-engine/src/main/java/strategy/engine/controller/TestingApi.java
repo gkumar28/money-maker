@@ -8,12 +8,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.ta4j.core.reports.TradingStatement;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.schemaobject.BarDataDto;
 import strategy.engine.schemaobject.SignalDto;
 import strategy.engine.schemaobject.StrategyOrderDto;
-import strategy.engine.schemaobject.TradingResultDto;
+import strategy.engine.schemaobject.TradingReport;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,12 +29,12 @@ public interface TestingApi {
     ResponseEntity<List<StrategyOrderDto>> simulateOrders(@RequestParam String instrument, @RequestBody @NotEmpty List<SignalDto> input);
 
     @PostMapping("/run-back-test")
-    ResponseEntity<TradingResultDto> backtest(@RequestParam String instrument,
-                                              @RequestParam String exchange,
-                                              @RequestParam String interval,
-                                              @RequestParam StrategyType strategyType,
-                                              @RequestParam LocalDate fromDate,
-                                              @RequestParam LocalDate toDate);
+    ResponseEntity<TradingReport> backtest(@RequestParam List<String> instruments,
+                                           @RequestParam String exchange,
+                                           @RequestParam String interval,
+                                           @RequestParam StrategyType strategyType,
+                                           @RequestParam LocalDate fromDate,
+                                           @RequestParam LocalDate toDate);
 
     @GetMapping("/indicators/kallman")
     ResponseEntity<Object> getKallmanPrediction(@RequestParam String instrument,

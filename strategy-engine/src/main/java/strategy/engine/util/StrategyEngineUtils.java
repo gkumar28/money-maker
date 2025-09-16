@@ -1,18 +1,22 @@
 package strategy.engine.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.Trade;
 import org.ta4j.core.num.DecimalNum;
 import strategy.engine.constant.enums.TradeDirection;
 import strategy.engine.schemaobject.StrategyOrderDto;
 import strategy.engine.schemaobject.TradeDto;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
+@Slf4j
 public class StrategyEngineUtils {
 
     private StrategyEngineUtils() {}
@@ -36,6 +40,7 @@ public class StrategyEngineUtils {
         tradeDto.setPrice(order.getPrice());
         tradeDto.setDirection(order.getDirection());
         tradeDto.setIndex(atIndex);
+        tradeDto.setTimestamp(ZonedDateTime.now(ZoneId.of("UTC")));
         return tradeDto;
     }
 

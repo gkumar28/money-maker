@@ -8,22 +8,17 @@ import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.num.DecimalNum;
-import org.ta4j.core.reports.TradingStatement;
 import strategy.engine.component.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.schemaobject.BarDataDto;
 import strategy.engine.schemaobject.SignalDto;
 import strategy.engine.schemaobject.StrategyOrderDto;
-import strategy.engine.schemaobject.TradingResultDto;
+import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.service.BacktestService;
 import strategy.engine.service.PositionManagementService;
 import strategy.engine.strategy.TradingStrategy;
-
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,19 +73,9 @@ public class TestingApiController implements TestingApi {
     }
 
     @Override
-    public ResponseEntity<TradingResultDto> backtest(String instrument, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
-        TradingStatement result = backtestService.backtest(instrument, exchange, interval, strategyType, fromDate, toDate);
-        TradingResultDto resultDto = new TradingResultDto();
-        resultDto.setBreakEvenCount(result.getPositionStatsReport().getBreakEvenCount().intValue());
-        resultDto.setLossCount(result.getPositionStatsReport().getLossCount().intValue());
-        resultDto.setProfitCount(result.getPositionStatsReport().getProfitCount().intValue());
-
-        resultDto.setTotalProfitLoss(result.getPerformanceReport().getTotalProfitLoss().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
-        resultDto.setTotalProfit(result.getPerformanceReport().getTotalProfit().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
-        resultDto.setTotalLoss(result.getPerformanceReport().getTotalLoss().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
-        resultDto.setTotalProfitLossPercentage(result.getPerformanceReport().getTotalProfitLossPercentage().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
-
-        return ResponseEntity.ok(resultDto);
+    public ResponseEntity<TradingReport> backtest(List<String> instruments, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
+        TradingReport result = backtestService.backtest(instruments, exchange, interval, strategyType, fromDate, toDate);
+        return ResponseEntity.ok(result);
     }
 
     @Override

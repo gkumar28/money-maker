@@ -17,6 +17,8 @@ import java.time.ZonedDateTime;
 public class PortfolioDto {
     private BigDecimal totalCapital;
     private BigDecimal availableCapital;
+    private BigDecimal currentInvestedCapital;
+    private BigDecimal maxInvestedCapital;
     private BigDecimal realizedPnL = BigDecimal.ZERO;
     private Map<String, HoldingDto> holdings = new HashMap<>();
     private List<TradeDto> tradeDtoList = new ArrayList<>();
