@@ -4,6 +4,7 @@ import org.ta4j.core.Position;
 import org.ta4j.core.Trade;
 import org.ta4j.core.TradingRecord;
 import org.ta4j.core.analysis.cost.CostModel;
+import org.ta4j.core.analysis.cost.ZeroCostModel;
 import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.num.Num;
 
@@ -41,7 +42,7 @@ public class MultiPositionTradingRecord implements TradingRecord {
     }
 
     public MultiPositionTradingRecord(String name, Trade.TradeType entryTradeType, Function<Number, Num> numFunction) {
-        this(name, entryTradeType, null, null, numFunction);
+        this(name, entryTradeType, new ZeroCostModel(), new ZeroCostModel(), numFunction);
     }
 
     public MultiPositionTradingRecord(String name, Trade.TradeType entryTradeType, CostModel transactionCostModel, CostModel holdingCostModel) {
@@ -95,8 +96,9 @@ public class MultiPositionTradingRecord implements TradingRecord {
         recordTrade(asTrade(entryTradeType.complementType(), index, price, amount), false);
         boolean anyPositionClosed = false;
 
-        while(null != openPositions.peek()) {
+        while(null != openPositions.peek() && amount.isPositive()) {
             Trade earliestOpenPosition = openPositions.peek();
+            if (null == earliestOpenPosition) break;
             if (aggregatePartialExit.getAmount().plus(amount).isLessThan(earliestOpenPosition.getAmount())) {
                 Num newPartialExitPrice = aggregatePartialExit.getValue().plus(price.multipliedBy(amount))
                     .dividedBy(aggregatePartialExit.getAmount().plus(amount));

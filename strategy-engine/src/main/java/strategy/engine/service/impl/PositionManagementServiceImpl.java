@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import strategy.engine.constant.enums.TradeDirection;
+import strategy.engine.schemaobject.HoldingDto;
 import strategy.engine.schemaobject.SignalDto;
 import strategy.engine.schemaobject.StrategyOrderDto;
 import strategy.engine.service.PortfolioService;
@@ -12,7 +13,6 @@ import strategy.engine.service.PositionManagementService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +37,6 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     private static final double CAPITAL_ALLOCATION_WEAK_TREND_MULTIPLIER = 0.5;
     private static final double CAPITAL_ALLOCATION_STRONG_TREND_MULTIPLIER = 1.2;
 
-    private final ConcurrentHashMap<String, Integer> holdings = new ConcurrentHashMap<>();
     private final PortfolioService portfolioService;
 
 
@@ -55,8 +54,11 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
     @Override
     public StrategyOrderDto calculateLongPositionExitSize(String instrument, SignalDto signal) {
-        int currentHoldings = portfolioService.getCurrentHoldings(instrument).getQuantity();
-
+        HoldingDto holdings = portfolioService.getCurrentHoldings(instrument);
+        if (null == holdings || holdings.getQuantity() == 0) {
+            return StrategyOrderDto.empty(instrument, signal);
+        }
+        int currentHoldings = holdings.getQuantity();
         BigDecimal confidence = signal.getConfidence(); // C
         BigDecimal minExitPositionPct = BigDecimal.valueOf(MINIMUM_EXIT_POSITION_PCT); // A
         BigDecimal minConfidenceToClose = BigDecimal.valueOf(MIN_CONFIDENCE_TO_CLOSE); // C100
@@ -74,7 +76,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
         int quantity = (int) Math.floor(currentHoldings * scale.doubleValue());
         if (quantity < MIN_LOT_SIZE) {
-            return null;  // Don't place tiny sell orders
+            quantity = 0;  // Don't place tiny sell orders
         }
 
         return new StrategyOrderDto(

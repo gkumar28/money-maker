@@ -16,7 +16,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // feign
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'com.zerodhatech.kiteconnect:kiteconnect:3.5.1'
 
     // data

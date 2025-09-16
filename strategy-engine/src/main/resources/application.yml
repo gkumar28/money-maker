@@ -1,5 +1,5 @@
 server:
-  port: ${port:8084}
+  port: ${PORT:8084}
   shutdown: GRACEFUL
 
 spring:
@@ -24,9 +24,13 @@ management:
 logging:
   level:
     root: INFO
-    execution.engine: INFO
+    strategy.engine: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
 
 bar:
   time-frame: 60
+
+service:
+  broker-integrator:
+    url: ${BROKER_INTEGRATOR_URL:http://localhost:8080}

@@ -16,10 +16,11 @@ import strategy.engine.schemaobject.SignalDto;
 import strategy.engine.schemaobject.StrategyOrderDto;
 import strategy.engine.schemaobject.TradingResultDto;
 import strategy.engine.service.BacktestService;
-import strategy.engine.service.MarketDataService;
 import strategy.engine.service.PositionManagementService;
 import strategy.engine.strategy.TradingStrategy;
 
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -35,7 +36,6 @@ public class TestingApiController implements TestingApi {
     private final TradingStrategyFactory tradingStrategyFactory;
     private final PositionManagementService positionManagementService;
     private final BacktestService backtestService;
-    private final MarketDataService marketDataService;
 
     @Override
     public ResponseEntity<List<SignalDto>> simulateSignals(String instrument, StrategyType type, List<BarDataDto> input) {
@@ -78,28 +78,23 @@ public class TestingApiController implements TestingApi {
     }
 
     @Override
-    public ResponseEntity<TradingResultDto> backtest(String instrument, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        TradingStatement result = backtestService.backtest(instrument, strategyType, dateTimeFormatter.format(fromDate), dateTimeFormatter.format(toDate));
+    public ResponseEntity<TradingResultDto> backtest(String instrument, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
+        TradingStatement result = backtestService.backtest(instrument, exchange, interval, strategyType, fromDate, toDate);
         TradingResultDto resultDto = new TradingResultDto();
         resultDto.setBreakEvenCount(result.getPositionStatsReport().getBreakEvenCount().intValue());
         resultDto.setLossCount(result.getPositionStatsReport().getLossCount().intValue());
         resultDto.setProfitCount(result.getPositionStatsReport().getProfitCount().intValue());
-        resultDto.setTotalProfitLoss(result.getPerformanceReport().getTotalProfitLoss().bigDecimalValue());
-        resultDto.setTotalProfit(result.getPerformanceReport().getTotalProfit().bigDecimalValue());
-        resultDto.setTotalLoss(result.getPerformanceReport().getTotalLoss().bigDecimalValue());
-        resultDto.setTotalProfitLossPercentage(result.getPerformanceReport().getTotalProfitLossPercentage().bigDecimalValue());
+
+        resultDto.setTotalProfitLoss(result.getPerformanceReport().getTotalProfitLoss().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
+        resultDto.setTotalProfit(result.getPerformanceReport().getTotalProfit().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
+        resultDto.setTotalLoss(result.getPerformanceReport().getTotalLoss().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
+        resultDto.setTotalProfitLossPercentage(result.getPerformanceReport().getTotalProfitLossPercentage().bigDecimalValue().setScale(2, RoundingMode.HALF_UP));
 
         return ResponseEntity.ok(resultDto);
     }
 
     @Override
-    public ResponseEntity<Object> getData(String instrument, LocalDate fromDate, LocalDate toDate) {
-        return ResponseEntity.ok(marketDataService.loadRawData(instrument, fromDate, toDate));
-    }
-
-    @Override
-    public ResponseEntity<Object> getKallmanPrediction(String instrument, LocalDate fromDate, LocalDate toDate) {
-        return ResponseEntity.ok(backtestService.getIndicatorValues(instrument, fromDate, toDate));
+    public ResponseEntity<Object> getKallmanPrediction(String instrument, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
+        return ResponseEntity.ok(backtestService.getIndicatorValues(instrument, exchange, interval, fromDate, toDate));
     }
 }

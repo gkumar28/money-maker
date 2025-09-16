@@ -1,18 +1,14 @@
 package strategy.engine.service;
 
-import org.ta4j.core.BarSeries;
+import org.ta4j.core.Bar;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 public interface MarketDataService {
 
-    BarSeries loadHistoricalData(String instrument, LocalDate fromDate, LocalDate toDate);
+    Path loadRawData(String instrument, String exchange, LocalDateTime fromDate, LocalDateTime toDate, String interval);
 
-    BarSeries loadHistoricalData(String instrument, String fromDate, String toDate);
-
-    List<Map<String, Object>> loadRawData(String instrument, LocalDate fromDate, LocalDate toDate);
-
-    List<Map<String, Object>> loadRawData(String instrument, String fromDate, String toDate);
+    Bar historicalCsvStringToBar(String csvString, Duration duration);
 }

@@ -35,3 +35,5 @@ replay_pid*
 # OS files
 .DS_STORE
 **/.DS_STORE
+
+/*/files/

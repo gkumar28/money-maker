@@ -2,8 +2,12 @@ package strategy.engine.strategy.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.indicators.ATRIndicator;
+import org.ta4j.core.indicators.helpers.ConstantIndicator;
 import org.ta4j.core.indicators.helpers.LowPriceIndicator;
 import org.ta4j.core.indicators.helpers.LowestValueIndicator;
+import org.ta4j.core.num.Num;
+import org.ta4j.core.rules.BooleanIndicatorRule;
+import org.ta4j.core.rules.BooleanRule;
 import strategy.engine.indicator.KallmanIndicator;
 import strategy.engine.constant.enums.TradeDirection;
 import strategy.engine.rule.SurgeRule;
@@ -54,16 +58,18 @@ public class LongTrendStrategy extends TradingStrategy {
         KallmanIndicator kallman = new KallmanIndicator(close, 0.01, 20);
         MACDIndicator macd = new MACDIndicator(close, 12, 26);
         EMAIndicator macdSignal = new EMAIndicator(macd, 9);
-        HighestValueIndicator recentHigh = new HighestValueIndicator(new HighPriceIndicator(barSeries), 20);
-        LowestValueIndicator recentLow = new LowestValueIndicator(new LowPriceIndicator(barSeries), 20);
+        HighestValueIndicator recentHigh = new HighestValueIndicator(new HighPriceIndicator(barSeries), 5);
+        LowestValueIndicator recentLow = new LowestValueIndicator(new LowPriceIndicator(barSeries), 5);
 
         // Entry rule - shows bullish direction
-        Rule entryRule = new SurgeRule(close, kallman, DecimalNum.valueOf(1.02), DecimalNum.valueOf(1))
+        Rule entryRule = new SurgeRule(kallman,
+            new ConstantIndicator<>(barSeries, DecimalNum.valueOf(0.5)),
+            DecimalNum.valueOf(1),
+            DecimalNum.valueOf(5))
             .and(new CrossedUpIndicatorRule(macd, macdSignal));
 
-        // Exit rule - shows bearish direction
-        Rule exitRule = new CrossedDownIndicatorRule(macd, macdSignal)
-            .and(new UnderIndicatorRule(close, recentLow));
+        // Exit rule - only basis exit strength
+        Rule exitRule = new BooleanRule(true);
 
         this.strategy =  new BaseStrategy(this.getClass().getName(), entryRule, exitRule, 5);
     }
@@ -72,14 +78,14 @@ public class LongTrendStrategy extends TradingStrategy {
     public SignalDto evaluate(int index) {
 
         boolean shouldEnter = strategy.shouldEnter(index);
-        boolean shouldExit = strategy.shouldExit(index);
+        boolean shouldExit = calculateExitStrength(index).doubleValue() > 0.55;
 
         BigDecimal atrValue = atr.getValue(index).bigDecimalValue();
         BigDecimal adx = avgVolume.getValue(index).bigDecimalValue();
 
         // ---- Signal Strength Logic ----
         BigDecimal entry = shouldEnter ? calculateEntryStrength(index) : BigDecimal.ZERO;
-        BigDecimal exit = shouldExit ? calculateExitStrength(index) : BigDecimal.ZERO;
+        BigDecimal exit =  shouldExit ? calculateExitStrength(index) : BigDecimal.ZERO;
 
         // normalized parameters
         BigDecimal normalizedEntry;
@@ -152,16 +158,16 @@ public class LongTrendStrategy extends TradingStrategy {
     }
 
     private BigDecimal calculateExitStrength(int index) {
-        double adxVal = adx.getValue(index).doubleValue();
-        double rsiVal = rsi.getValue(index).doubleValue();
         double atrRatio = atr.getValue(index).doubleValue() / close.getValue(index).doubleValue();
-
-        double adxScore = StrategyEngineUtils.normalize(30 - adxVal, 0, 20); // 30→10 maps to 0→1
-        double rsiScore = StrategyEngineUtils.normalize(rsiVal, 60, 80); // 60→80 becomes 0→1
         double atrScore = StrategyEngineUtils.normalize(atrRatio, 0.02, 0.06); // 2% to 6% ATR
 
-        double weightedScore = 0.4 * adxScore + 0.4 * rsiScore + 0.2 * atrScore;
+        double adxVal = adx.getValue(index).doubleValue();
+        double adxScore = StrategyEngineUtils.normalize(30 - adxVal, 0, 20); // 30→10 maps to 0→1
 
+        double rsiVal = rsi.getValue(index).doubleValue();
+        double rsiScore = StrategyEngineUtils.normalize(rsiVal, 60, 80); // 60→80 becomes 0→1
+
+        double weightedScore = 0.4 * adxScore + 0.4 * rsiScore + 0.2 * atrScore;
         return StrategyEngineUtils.roundToTwoDecimals(weightedScore);
     }
 }

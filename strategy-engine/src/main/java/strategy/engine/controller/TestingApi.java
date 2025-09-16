@@ -30,11 +30,17 @@ public interface TestingApi {
     ResponseEntity<List<StrategyOrderDto>> simulateOrders(@RequestParam String instrument, @RequestBody @NotEmpty List<SignalDto> input);
 
     @PostMapping("/run-back-test")
-    ResponseEntity<TradingResultDto> backtest(@RequestParam String instrument, @RequestParam StrategyType strategyType, @RequestParam LocalDate fromDate, @RequestParam LocalDate toDate);
-
-    @GetMapping("/data")
-    ResponseEntity<Object> getData(@RequestParam String instrument, @RequestParam LocalDate fromDate, @RequestParam LocalDate toDate);
+    ResponseEntity<TradingResultDto> backtest(@RequestParam String instrument,
+                                              @RequestParam String exchange,
+                                              @RequestParam String interval,
+                                              @RequestParam StrategyType strategyType,
+                                              @RequestParam LocalDate fromDate,
+                                              @RequestParam LocalDate toDate);
 
     @GetMapping("/indicators/kallman")
-    ResponseEntity<Object> getKallmanPrediction(@RequestParam String instrument, @RequestParam LocalDate fromDate, @RequestParam LocalDate toDate);
+    ResponseEntity<Object> getKallmanPrediction(@RequestParam String instrument,
+                                                @RequestParam String exchange,
+                                                @RequestParam String interval,
+                                                @RequestParam LocalDate fromDate,
+                                                @RequestParam LocalDate toDate);
 }

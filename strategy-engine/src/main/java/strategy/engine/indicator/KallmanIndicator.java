@@ -6,17 +6,15 @@ import org.ta4j.core.Indicator;
 import org.ta4j.core.indicators.CachedIndicator;
 import org.ta4j.core.num.Num;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class KallmanIndicator extends CachedIndicator<Num> {
 
+    private final Map<Integer, KallmanState> stateCache;
     private final Indicator<Num> priceIndicator;
     private final Num q; // Process noise variance
     private final int rWindow; // Window size for measurement noise estimation
-    private final int cacheSize;
-
-    // State vector x = [price; velocity]
-    private final SimpleMatrix[] xStates;
-    // Covariance matrix P (2x2)
-    private final SimpleMatrix[] pStates;
 
     // Process noise covariance Q (2x2)
     private final SimpleMatrix noiseCovariance;
@@ -31,75 +29,59 @@ public class KallmanIndicator extends CachedIndicator<Num> {
 
     public KallmanIndicator(Indicator<Num> priceIndicator, double qValue, int rWindow) {
         super(priceIndicator.getBarSeries());
+        this.stateCache = new HashMap<>();
         this.priceIndicator = priceIndicator;
         this.q = priceIndicator.numOf(qValue);
         this.rWindow = rWindow;
-        this.cacheSize = priceIndicator.getBarSeries().getMaximumBarCount();
-
         noiseCovariance = new SimpleMatrix(new double[][]{
             {qValue, 0},
             {0, qValue}
         });
-
-        xStates = new SimpleMatrix[cacheSize];
-        pStates = new SimpleMatrix[cacheSize];
-        // Initialize state vector x at first price with zero velocity
-        double initialPrice = priceIndicator.getValue(0).doubleValue();
-        xStates[0] = new SimpleMatrix(new double[][]{{initialPrice}, {0}});
-        pStates[0] = SimpleMatrix.identity(2);
-    }
-
-    private int cacheIndex(int logicalIndex) {
-        return logicalIndex % cacheSize;
     }
 
     @Override
     protected Num calculate(int index) {
         if (index == 0) {
-            return getValue(0);
+            double initialPrice = priceIndicator.getValue(0).doubleValue();
+            KallmanState initial = new KallmanState(
+                new SimpleMatrix(new double[][]{{initialPrice}, {0}}),
+                SimpleMatrix.identity(2)
+            );
+            stateCache.put(0, initial);
+            return priceIndicator.numOf(initialPrice);
         }
 
-        int prevCachedIndex = cacheIndex(index - 1);
-        // Ensure previous states are calculated
-        if (xStates[prevCachedIndex] == null) {
+        KallmanState prev = stateCache.get(index - 1);
+        if (prev == null) {
             calculate(index - 1);
+            prev = stateCache.get(index - 1);
         }
 
-        // Previous state and covariance
-        SimpleMatrix xPrev = xStates[prevCachedIndex];
-        SimpleMatrix pPrev = pStates[prevCachedIndex];
+        // Prediction
+        SimpleMatrix xPred = transition.mult(prev.x);
+        SimpleMatrix pPred = transition.mult(prev.p).mult(transition.transpose()).plus(noiseCovariance);
 
-        // Prediction step
-        SimpleMatrix xPred = transition.mult(xPrev);
-        SimpleMatrix pPred = transition.mult(pPrev).mult(transition.transpose()).plus(noiseCovariance);
-
-        // Measurement noise covariance R
-        double r = estimateMeasurementNoise(index);
-        SimpleMatrix noise = new SimpleMatrix(new double[][] {{r}});
-
-        // Innovation covariance
-        SimpleMatrix innovation = measurement.mult(pPred).mult(measurement.transpose()).plus(noise);
-
-        // Kalman Gain
-        SimpleMatrix kallman = pPred.mult(measurement.transpose()).mult(innovation.invert());
-
-        // Measurement residual
-        double data = priceIndicator.getValue(index).doubleValue();
-        SimpleMatrix z = new SimpleMatrix(new double[][] {{data}});
+        // deviation from prediction
+        double measurementVal = priceIndicator.getValue(index).doubleValue();
+        SimpleMatrix z = new SimpleMatrix(new double[][]{{measurementVal}});
         SimpleMatrix y = z.minus(measurement.mult(xPred));
 
-        // Update step
-        SimpleMatrix xNew = xPred.plus(kallman.mult(y));
-        SimpleMatrix identity = SimpleMatrix.identity(2);
-        SimpleMatrix pNew = (identity.minus(kallman.mult(measurement))).mult(pPred);
+        // Correction of predicted value basis current observation
+        double r = estimateMeasurementNoise(index);
+        SimpleMatrix R = new SimpleMatrix(new double[][]{{r}});
+        SimpleMatrix S = measurement.mult(pPred).mult(measurement.transpose()).plus(R);
+        SimpleMatrix K = pPred.mult(measurement.transpose()).mult(S.invert());
 
-        // Cache new states
-        int currentCacheIndex = cacheIndex(index);
-        xStates[currentCacheIndex] = xNew;
-        pStates[currentCacheIndex] = pNew;
+        // filtered estimate (post current observation)
+        SimpleMatrix xNew = xPred.plus(K.mult(y));
+        SimpleMatrix I = SimpleMatrix.identity(2);
+        SimpleMatrix pNew = (I.minus(K.mult(measurement))).mult(pPred);
 
-        // Return filtered price (first element of state vector)
-        return priceIndicator.numOf(xNew.get(0, 0));
+        KallmanState current = new KallmanState(xNew, pNew);
+        stateCache.put(index, current);
+
+        // z-score: prediction / std deviation
+        return priceIndicator.numOf(y.get(0, 0) / Math.sqrt(S.get(0, 0)));
     }
 
     private double estimateMeasurementNoise(int index) {
@@ -117,17 +99,12 @@ public class KallmanIndicator extends CachedIndicator<Num> {
         }
         double mean = sum / count;
         double variance = (sumSq - (mean * mean) * count) / (count - 1);
-        return Math.max(variance, 1e-2);
+        return Math.max(variance, 1e-4);
     }
 
     @Override
     public synchronized Num getValue(int index) {
-        if (index == 0) {
-            return priceIndicator.numOf(xStates[cacheIndex(index)].get(0, 0));
-        }
-
-        calculate(index);
-        return priceIndicator.numOf(xStates[cacheIndex(index)].get(0, 0));
+        return super.getValue(index);
     }
 
     @Override
@@ -144,4 +121,6 @@ public class KallmanIndicator extends CachedIndicator<Num> {
     public Num numOf(Number number) {
         return priceIndicator.numOf(number);
     }
+
+    private record KallmanState(SimpleMatrix x, SimpleMatrix p) { }
 }

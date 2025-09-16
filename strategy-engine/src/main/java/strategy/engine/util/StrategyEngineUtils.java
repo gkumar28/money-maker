@@ -113,4 +113,16 @@ public class StrategyEngineUtils {
         return Trade.TradeType.SELL;
     }
 
+    public static TradeDirection asTradeDirection(Trade.TradeType tradeType) {
+        if (null == tradeType) {
+            return null;
+        }
+
+        if (Trade.TradeType.BUY.toString().equalsIgnoreCase(tradeType.toString())) {
+            return TradeDirection.BUY;
+        }
+
+        return TradeDirection.SELL;
+    }
+
 }

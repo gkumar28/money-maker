@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface BacktestService {
-    TradingStatement backtest(String instrument, StrategyType strategyType, String fromDate, String toDate);
+    TradingStatement backtest(String instrument, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate);
 
-    List<Map<String, Object>> getIndicatorValues(String instrument, LocalDate fromDate, LocalDate toDate);
+    List<Map<String, Object>> getIndicatorValues(String instrument, String exchange, String interval, LocalDate fromDate, LocalDate toDate);
 }

@@ -6,7 +6,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: mappings
+        include: health,loggers,info,mappings
 
 bar:
   time-frame: 60
