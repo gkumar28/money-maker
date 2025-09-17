@@ -49,20 +49,4 @@ public class MarketDataServiceImpl implements MarketDataService {
         Instrument instrument = instrumentRepository.findByTradingSymbolAndExchange(tradingSymbol, exchange).orElse(new Instrument());
         return instrument.getInstrumentToken();
     }
-
-    private long estimatePoints(LocalDateTime from, LocalDateTime to, Duration interval) {
-        Duration totalDuration = Duration.between(from, to);
-        long points = totalDuration.toMillis() / interval.toMillis();
-        return points + 1;
-    }
-
-    private Duration getIntervalDuration(String interval) {
-        return switch (interval.toLowerCase().trim()) {
-            case "minute", "1minute" -> Duration.ofMinutes(1);
-            case "5minute" -> Duration.ofMinutes(5);
-            case "60minute", "1hour" -> Duration.ofHours(1);
-            case "1day", "day" -> Duration.ofDays(1);
-            default -> throw new IllegalArgumentException("Unsupported interval: " + interval);
-        };
-    }
 }
