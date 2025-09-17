@@ -6,11 +6,13 @@ import org.ta4j.core.Indicator;
 import org.ta4j.core.indicators.CachedIndicator;
 import org.ta4j.core.num.Num;
 
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class KallmanIndicator extends CachedIndicator<Num> {
 
+    private final int stateCacheSizeLimit;
     private final Map<Integer, KallmanState> stateCache;
     private final Indicator<Num> priceIndicator;
     private final Num q; // Process noise variance
@@ -29,7 +31,8 @@ public class KallmanIndicator extends CachedIndicator<Num> {
 
     public KallmanIndicator(Indicator<Num> priceIndicator, double qValue, int rWindow) {
         super(priceIndicator.getBarSeries());
-        this.stateCache = new HashMap<>();
+        this.stateCache = new LinkedHashMap<>();
+        this.stateCacheSizeLimit = priceIndicator.getBarSeries().getMaximumBarCount();
         this.priceIndicator = priceIndicator;
         this.q = priceIndicator.numOf(qValue);
         this.rWindow = rWindow;
@@ -80,6 +83,13 @@ public class KallmanIndicator extends CachedIndicator<Num> {
         KallmanState current = new KallmanState(xNew, pNew);
         stateCache.put(index, current);
 
+        while(stateCache.size() > stateCacheSizeLimit) {
+            Iterator<Integer> it = stateCache.keySet().iterator();
+            if (it.hasNext()) {
+                it.next();
+                it.remove();
+            }
+        }
         // z-score: prediction / std deviation
         return priceIndicator.numOf(y.get(0, 0) / Math.sqrt(S.get(0, 0)));
     }

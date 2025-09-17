@@ -60,59 +60,111 @@ public class BacktestServiceImpl implements BacktestService {
         LocalDateTime from = fromDate.atTime(LocalTime.of(0, 0, 0));
         LocalDateTime to = toDate.atTime(LocalTime.of(23, 59, 59));
         TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolioService.getPortfolio());
+
+        List<String> readyToTest = new ArrayList<>();
+        Map<String, Iterator<String>> fileIterators = new HashMap<>();
+        Map<String, BarSeries> barSeries = new HashMap<>();
+        Map<String, TradingStrategy> strategies = new HashMap<>();
+        Map<String, MultiPositionTradingRecord> tradingRecords = new HashMap<>();
+        MultiPositionTradeOnNextOpenModel tradeExecutionModel = new MultiPositionTradeOnNextOpenModel();
+
         for (String instrument: instruments) {
-            TradingRecord tradingRecord = backtestPerInstrument(instrument, exchange, interval, from, to, strategyType);
-            if (null != tradingRecord) {
-                tradingReportGenerator.setTradingRecord(instrument, tradingRecord);
+            Path dataFilePath = marketDataService.loadRawData(instrument, exchange, from, to, interval);
+            boolean instrumentBacktestLoaded = initBacktestForInstrument(instrument, strategyType, dataFilePath, fileIterators, barSeries, strategies, tradingRecords);
+            if (instrumentBacktestLoaded) {
+                readyToTest.add(instrument);
+                tradingReportGenerator.setTradingRecord(instrument, tradingRecords.get(instrument));
             }
+        }
+
+        boolean hasNext = true;
+        int index = 0;
+        while (hasNext) {
+            hasNext = false;
+            for (String instrument: readyToTest) {
+                boolean currentHasNext = backtestPerInstrument(index,
+                    instrument,
+                    interval,
+                    fileIterators.get(instrument),
+                    barSeries.get(instrument),
+                    strategies.get(instrument),
+                    tradeExecutionModel,
+                    tradingRecords.get(instrument));
+                hasNext = hasNext || currentHasNext;
+            }
+            index++;
         }
 
         return tradingReportGenerator.generate();
     }
 
-    private TradingRecord backtestPerInstrument(String instrument, String exchange, String interval, LocalDateTime from, LocalDateTime to, StrategyType strategyType) {
-        Path dataFilePath = marketDataService.loadRawData(instrument, exchange, from, to, interval);
-        try(Stream<String> lines = Files.lines(dataFilePath)) {
+    private boolean initBacktestForInstrument(String instrument,
+                              StrategyType strategyType,
+                              Path dataFilePath,
+                              Map<String, Iterator<String>> fileIterators,
+                              Map<String, BarSeries> barSeries,
+                              Map<String, TradingStrategy> strategies,
+                              Map<String, MultiPositionTradingRecord> tradingRecords) {
 
-            BarSeries barSeries = new BaseBarSeries(instrument);
-            barSeries.setMaximumBarCount(100);
-            TradingStrategy strategy = tradingStrategyFactory.create(strategyType, barSeries);
-            MultiPositionTradingRecord tradingRecord = new MultiPositionTradingRecord(instrument, Trade.TradeType.BUY);
-            MultiPositionTradeOnNextOpenModel tradeExecutionModel = new MultiPositionTradeOnNextOpenModel();
-
+        try {
+            Stream<String> lines = Files.lines(dataFilePath);
             Iterator<String> fileIterator = lines.skip(1).iterator();
-            int index = 0;
-            while(fileIterator.hasNext()) {
-                Bar bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(interval));
-                barSeries.addBar(bar);
+            fileIterators.put(instrument, fileIterator);
 
-                if (index > 0) {
-                    SignalDto newSignal = strategy.evaluate(index - 1);
-                    StrategyOrderDto order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
-                    if (null == order) {
-                        order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
-                    }
+            BarSeries series = new BaseBarSeries(instrument);
+            series.setMaximumBarCount(100);
+            barSeries.put(instrument, series);
 
-                    if (null != order.getDirection()) {
-                        if (order.getQuantity() > 0) {
-                            TradeDto executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
+            TradingStrategy strategy = tradingStrategyFactory.create(strategyType, series);
+            strategies.put(instrument, strategy);
 
-                            portfolioService.applyTrade(executedTrade, tradingRecord);
-                            positionManagementService.updateSlTpForInstrument(instrument);
-                        } else {
-                            log.debug("{}: index: {} No trade as quantity too low", instrument, index - 1);
-                        }
-                    }
-                }
+            MultiPositionTradingRecord tradingRecord = new MultiPositionTradingRecord(instrument, Trade.TradeType.BUY);
+            tradingRecords.put(instrument, tradingRecord);
+        } catch (Exception e) {
+            log.error("Failed to initialize instrument {}", instrument, e);
+            return false;
+        }
 
-                index++;
+        return true;
+    }
+
+    private boolean backtestPerInstrument(int index,
+                                          String instrument,
+                                          String interval,
+                                          Iterator<String> fileIterator,
+                                          BarSeries barSeries,
+                                          TradingStrategy strategy,
+                                          MultiPositionTradeOnNextOpenModel tradeExecutionModel,
+                                          MultiPositionTradingRecord tradingRecord) {
+        Bar bar;
+        try {
+            bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(interval));
+            barSeries.addBar(bar);
+        } catch (Exception exception) {
+            log.error("{}: backtesting failed at index {}", instrument, index, exception);
+            return false;
+        }
+
+
+        if (index > 0) {
+            SignalDto newSignal = strategy.evaluate(index - 1);
+            StrategyOrderDto order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
+            if (null == order) {
+                order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
             }
 
-            return tradingRecord;
-        } catch (Exception exception) {
-            log.error("Backtest failed", exception);
+            if (null != order.getDirection()) {
+                if (order.getQuantity() > 0) {
+                    TradeDto executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
+
+                    portfolioService.applyTrade(executedTrade, tradingRecord);
+                    positionManagementService.updateSlTpForInstrument(instrument);
+                } else {
+                    log.debug("{}: index: {} No trade as quantity too low", instrument, index - 1);
+                }
+            }
         }
-        return null;
+        return fileIterator.hasNext();
     }
 
     private Duration getDuration(String interval) {

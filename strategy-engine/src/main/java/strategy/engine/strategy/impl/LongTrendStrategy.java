@@ -1,12 +1,11 @@
 package strategy.engine.strategy.impl;
 
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.indicators.ATRIndicator;
 import org.ta4j.core.indicators.helpers.ConstantIndicator;
 import org.ta4j.core.indicators.helpers.LowPriceIndicator;
 import org.ta4j.core.indicators.helpers.LowestValueIndicator;
-import org.ta4j.core.num.Num;
-import org.ta4j.core.rules.BooleanIndicatorRule;
 import org.ta4j.core.rules.BooleanRule;
 import strategy.engine.indicator.KallmanIndicator;
 import strategy.engine.constant.enums.TradeDirection;
@@ -26,14 +25,13 @@ import org.ta4j.core.indicators.helpers.HighPriceIndicator;
 import org.ta4j.core.indicators.helpers.HighestValueIndicator;
 import org.ta4j.core.indicators.helpers.VolumeIndicator;
 import org.ta4j.core.num.DecimalNum;
-import org.ta4j.core.rules.CrossedDownIndicatorRule;
 import org.ta4j.core.rules.CrossedUpIndicatorRule;
-import org.ta4j.core.rules.UnderIndicatorRule;
 import strategy.engine.util.StrategyEngineUtils;
 
 import java.math.BigDecimal;
 
 @Slf4j
+@EqualsAndHashCode(callSuper = true)
 public class LongTrendStrategy extends TradingStrategy {
 
     private ATRIndicator atr;

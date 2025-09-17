@@ -1,5 +1,6 @@
 package strategy.engine.schemaobject.analysis;
 
+import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.Position;
 import org.ta4j.core.Trade;
 import org.ta4j.core.TradingRecord;
@@ -7,9 +8,6 @@ import org.ta4j.core.analysis.cost.CostModel;
 import org.ta4j.core.analysis.cost.ZeroCostModel;
 import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.num.Num;
-import strategy.engine.schemaobject.TradeDto;
-
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -18,6 +16,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.function.Function;
 
+@Slf4j
 public class MultiPositionTradingRecord implements TradingRecord {
 
     private final String name;
