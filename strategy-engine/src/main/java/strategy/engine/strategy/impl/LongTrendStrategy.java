@@ -130,7 +130,7 @@ public class LongTrendStrategy extends TradingStrategy {
 
     private void logDebugMessage(String signal, int index, BigDecimal confidence) {
         if (log.isDebugEnabled()) {
-            log.debug("{} at index {} with confidence {}", signal, index, confidence);
+            log.debug("{}: {} with confidence {}", barSeries.getName(), signal, confidence);
         }
     }
 

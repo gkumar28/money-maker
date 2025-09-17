@@ -103,14 +103,12 @@ public class RedisServiceImpl implements RedisService {
     }
 
     private String toSizedOrderString(StrategyOrderDto strategyOrderDto) {
-        return String.format("%s,%d,%s,%d,%s,%s,%s,%s,%s",
+        return String.format("%s,%d,%s,%d,%s,%s,%s",
             strategyOrderDto.getInstrument(),
             strategyOrderDto.getTimestamp().toInstant().toEpochMilli(),
             strategyOrderDto.getDirection().name(),
             strategyOrderDto.getQuantity(),
             valueOrEmpty(strategyOrderDto.getPrice()),
-            valueOrEmpty(strategyOrderDto.getSlPrice()),
-            valueOrEmpty(strategyOrderDto.getTpPrice()),
             valueOrEmpty(strategyOrderDto.getSignalStrength()),
             valueOrEmpty(strategyOrderDto.getCapitalAllocated())
         );

@@ -130,4 +130,8 @@ public class StrategyEngineUtils {
         return TradeDirection.SELL;
     }
 
+    public static BigDecimal sanitize(BigDecimal value) {
+        return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
 }

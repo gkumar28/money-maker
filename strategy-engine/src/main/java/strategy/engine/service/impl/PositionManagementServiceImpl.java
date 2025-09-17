@@ -13,6 +13,9 @@ import strategy.engine.service.PositionManagementService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
+
+import static strategy.engine.util.StrategyEngineUtils.sanitize;
 
 @Service
 @RequiredArgsConstructor
@@ -23,10 +26,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     private static final int MIN_LOT_SIZE = 1;
 
     // Entry position constants
-    private static final double SL_MIN_MULTIPLIER = 1.0;
-    private static final double SL_MAX_MULTIPLIER = 2.5;
-    private static final double TP_MIN_MULTIPLIER = 2.0;
-    private static final double TP_MAX_MULTIPLIER = 4.0;
+    private static final double SL_MULTIPLIER = 0.05;
+    private static final double TP_MULTIPLIER = 0.2;
 
     // Exit position constants
     private static final double MIN_CONFIDENCE_TO_SELL = 0.5;
@@ -38,6 +39,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     private static final double CAPITAL_ALLOCATION_STRONG_TREND_MULTIPLIER = 1.2;
 
     private final PortfolioService portfolioService;
+    private final Map<String, BigDecimal> slPrices;
+    private final Map<String, BigDecimal> tpPrices;
 
 
     @Override
@@ -79,14 +82,13 @@ public class PositionManagementServiceImpl implements PositionManagementService 
             quantity = 0;  // Don't place tiny sell orders
         }
 
+        log.debug("{}: Exit order price: quantity: {} price: {}", instrument, quantity, sanitize(signal.getPrice()));
         return new StrategyOrderDto(
             instrument,
             signal.getTimestamp(),
             TradeDirection.SELL,
             quantity,
             signal.getPrice(),
-            null,
-            null,
             signal.getConfidence(),
             signal.getPrice().multiply(BigDecimal.valueOf(quantity))  // capital released
         );
@@ -100,30 +102,48 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
         // 7. Calculate quantity = capital allocation / entry price
         int quantity = finalCapitalAllocation.divide(signal.getPrice(), 4, RoundingMode.HALF_UP).intValue();
-        BigDecimal stopLoss = calculateStopLoss(signal);
-        BigDecimal takeProfit = calculateTakeProfit(signal);
         if (quantity < MIN_LOT_SIZE) {
             quantity = 0; // Could choose to skip trade or round up to min lot size
         }
 
+        log.debug("{}: Entry order price: quantity: {} price: {}", instrument, quantity, sanitize(signal.getPrice()));
         return new StrategyOrderDto(
             instrument,
             signal.getTimestamp(),
             TradeDirection.BUY,
             quantity,
             signal.getPrice(),
-            stopLoss,
-            takeProfit,
             signal.getConfidence(),
             finalCapitalAllocation
         );
     }
 
+    @Override
+    public StrategyOrderDto triggerSLTPForPosition(String instrument, SignalDto signalDto, BigDecimal currentPrice) {
+        HoldingDto currentHolding = portfolioService.getPortfolio().getHoldings().getOrDefault(instrument, new HoldingDto(instrument));
+        BigDecimal slPrice = slPrices.get(instrument);
+        BigDecimal tpPrice = tpPrices.get(instrument);
+        if (0 == currentHolding.getQuantity() || slPrice == null || tpPrice == null) {
+            return null;
+        }
+
+        if (slPrice.compareTo(currentPrice) < 0 && tpPrice.compareTo(currentPrice) > 0) {
+           return null;
+        }
+        log.debug("{}: SL-TP triggered SL: {} TP: {} current: {}", instrument, sanitize(slPrice), sanitize(tpPrice), sanitize(currentPrice));
+
+        slPrices.remove(instrument);
+        tpPrices.remove(instrument);
+        return new StrategyOrderDto(instrument,
+            signalDto.getTimestamp(),
+            TradeDirection.SELL,
+            currentHolding.getQuantity(),
+            currentPrice,
+            BigDecimal.ONE,
+            null);
+    }
+
     private BigDecimal getFinalCapitalAllocation(SignalDto signal, BigDecimal baseCapital) {
-        // Volatility adjustment using ATR (inverse relation)
-        // Avoid divide by zero or very small ATR values
-        BigDecimal adjustedAtr = signal.getAtr().max(new BigDecimal("0.0001"));
-        BigDecimal volatilityAdjustedCapital = baseCapital.divide(adjustedAtr, 4, RoundingMode.HALF_UP);
 
         BigDecimal trendMultiplier = BigDecimal.ONE;
         if (signal.getAdx().doubleValue() < 20) {
@@ -133,37 +153,45 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         }
 
         // Calculate final capital to allocate for this trade
-        return volatilityAdjustedCapital.multiply(trendMultiplier).multiply(signal.getConfidence());
+        return baseCapital.multiply(trendMultiplier).multiply(signal.getConfidence());
     }
 
-    private BigDecimal calculateStopLoss(SignalDto signal) {
-        // Example: use ATR (Average True Range) to set SL some multiple below entry price
-        BigDecimal entryPrice = signal.getPrice();
-        BigDecimal atr = signal.getAtr();
-        BigDecimal confidence = signal.getConfidence();
+    @Override
+    public void updateSlTpForInstrument(String instrument) {
+        if (updateStopLoss(instrument) && updateTakeProfit(instrument)) {
+            log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(slPrices.get(instrument)), sanitize(tpPrices.get(instrument)));
+        }
+    }
 
-        // Inverse relation: stronger signal => smaller multiplier
-        double multiplier = SL_MAX_MULTIPLIER - (confidence.doubleValue() * (SL_MAX_MULTIPLIER - SL_MIN_MULTIPLIER));
+    private boolean updateStopLoss(String instrument) {
+        HoldingDto holding = portfolioService.getCurrentHoldings(instrument);
+        if (holding.getQuantity() == 0) {
+            return false;
+        }
 
-        BigDecimal slDistance = atr.multiply(BigDecimal.valueOf(multiplier));
-        BigDecimal stopLoss = entryPrice.subtract(slDistance);
+        BigDecimal avgEntryPrice = holding.getCurrentInvestedCapital().divide(BigDecimal.valueOf(holding.getQuantity()), RoundingMode.HALF_UP);
+
+        BigDecimal slDistance = avgEntryPrice.multiply(BigDecimal.valueOf(SL_MULTIPLIER));
+        BigDecimal stopLoss = avgEntryPrice.subtract(slDistance);
         if (stopLoss.compareTo(BigDecimal.ZERO) < 0) {
             stopLoss = BigDecimal.ZERO;
         }
-        return stopLoss.setScale(2, RoundingMode.HALF_UP);
+        slPrices.put(instrument, stopLoss);
+        return true;
     }
 
-    private BigDecimal calculateTakeProfit(SignalDto signal) {
-        BigDecimal entryPrice = signal.getPrice();
-        BigDecimal atr = signal.getAtr();
-        BigDecimal confidence = signal.getConfidence();
+    private boolean updateTakeProfit(String instrument) {
+        HoldingDto holding = portfolioService.getCurrentHoldings(instrument);
+        if (holding.getQuantity() == 0) {
+            return false;
+        }
 
-        // Direct relation: stronger signal => larger multiplier
-        double multiplier = TP_MIN_MULTIPLIER + (confidence.doubleValue() * (TP_MAX_MULTIPLIER - TP_MIN_MULTIPLIER));
+        BigDecimal avgEntryPrice = holding.getCurrentInvestedCapital().divide(BigDecimal.valueOf(holding.getQuantity()), RoundingMode.HALF_UP);
 
-        BigDecimal tpDistance = atr.multiply(BigDecimal.valueOf(multiplier));
-        BigDecimal takeProfit = entryPrice.add(tpDistance);
-        return takeProfit.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal tpDistance = avgEntryPrice.multiply(BigDecimal.valueOf(TP_MULTIPLIER));
+        BigDecimal takeProfit = avgEntryPrice.add(tpDistance);
+        tpPrices.put(instrument, takeProfit);
+        return true;
     }
 }
 

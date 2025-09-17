@@ -7,8 +7,11 @@ import org.ta4j.core.analysis.cost.CostModel;
 import org.ta4j.core.analysis.cost.ZeroCostModel;
 import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.num.Num;
+import strategy.engine.schemaobject.TradeDto;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -189,6 +192,25 @@ public class MultiPositionTradingRecord implements TradingRecord {
     @Override
     public Integer getEndIndex() {
         return this.endIndex;
+    }
+
+    public Num getCurrentInvestedCapital() {
+        if (openPositions.isEmpty()) {
+            return numFunction.apply(0);
+        }
+
+        Num investedCapital = openPositions.stream().map(position -> position.getAmount().multipliedBy(position.getPricePerAsset())).reduce(DecimalNum.ZERO, Num::plus);
+        if (null != aggregatePartialExit) {
+            Num amount = numFunction.apply(aggregatePartialExit.getAmount().bigDecimalValue());
+            Iterator<Trade> openPositionIterator = openPositions.iterator();
+            while(openPositionIterator.hasNext() && amount.isPositive()) {
+                Trade openTrade = openPositionIterator.next();
+                investedCapital = investedCapital.minus(amount.min(openTrade.getAmount()).multipliedBy(openTrade.getPricePerAsset()));
+                amount = amount.minus(openTrade.getAmount()).max(numFunction.apply(0));
+            }
+        }
+
+        return investedCapital;
     }
 
     private void recordTrade(Trade trade, boolean isEntry) {

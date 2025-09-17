@@ -21,7 +21,6 @@ public class PortfolioDto {
     private BigDecimal maxInvestedCapital;
     private BigDecimal realizedPnL = BigDecimal.ZERO;
     private Map<String, HoldingDto> holdings = new HashMap<>();
-    private List<TradeDto> tradeDtoList = new ArrayList<>();
     private ZonedDateTime lastUpdated;
 
     public void setLastUpdated() {

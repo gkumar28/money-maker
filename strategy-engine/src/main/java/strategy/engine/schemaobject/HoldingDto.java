@@ -14,6 +14,10 @@ public class HoldingDto {
 
     private BigDecimal currentInvestedCapital = BigDecimal.ZERO;
     private BigDecimal maxInvestedCapital = BigDecimal.ZERO;
+
+    public HoldingDto(String instrument) {
+        this.instrument = instrument;
+    }
 }
 
 

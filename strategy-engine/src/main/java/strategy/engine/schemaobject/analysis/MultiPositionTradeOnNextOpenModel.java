@@ -1,34 +1,32 @@
 package strategy.engine.schemaobject.analysis;
 
+import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.BarSeries;
-import org.ta4j.core.Trade;
-import org.ta4j.core.TradingRecord;
-import org.ta4j.core.num.Num;
+import org.ta4j.core.num.DecimalNum;
+import strategy.engine.constant.enums.TradeDirection;
+import strategy.engine.schemaobject.StrategyOrderDto;
 import strategy.engine.schemaobject.TradeDto;
-import strategy.engine.util.StrategyEngineUtils;
 
-public class MultiPositionTradeOnNextOpenModel implements ExtendedTradeExecutionModel {
-
-    @Override
-    public void execute(int index, TradingRecord tradingRecord, BarSeries barSeries, Num amount) {
-        throw new UnsupportedOperationException("Trade type must be provided");
-    }
+@Slf4j
+public class MultiPositionTradeOnNextOpenModel implements MultiPositionTradeExecutionModel {
 
     @Override
-    public TradeDto execute(int index, TradingRecord tradingRecord, BarSeries barSeries, Num amount, Trade.TradeType tradeType) {
+    public TradeDto execute(int index, MultiPositionTradingRecord tradingRecord, BarSeries barSeries, StrategyOrderDto strategyOrderDto) {
         int indexOfExecutedBar = index + 1;
         if (indexOfExecutedBar <= barSeries.getEndIndex()) {
-            if (Trade.TradeType.BUY.equals(tradeType)) {
-                tradingRecord.enter(indexOfExecutedBar, barSeries.getBar(indexOfExecutedBar).getOpenPrice(), amount);
+            if (TradeDirection.BUY.equals(strategyOrderDto.getDirection())) {
+                tradingRecord.enter(indexOfExecutedBar, barSeries.getBar(indexOfExecutedBar).getOpenPrice(), DecimalNum.valueOf(strategyOrderDto.getQuantity()));
             } else {
-                tradingRecord.exit(indexOfExecutedBar, barSeries.getBar(indexOfExecutedBar).getOpenPrice(), amount);
+                tradingRecord.exit(indexOfExecutedBar, barSeries.getBar(indexOfExecutedBar).getOpenPrice(), DecimalNum.valueOf(strategyOrderDto.getQuantity()));
             }
+            log.debug("{}: Trade executed index: {} quantity: {} price: {}", strategyOrderDto.getInstrument(), index, strategyOrderDto.getQuantity(), barSeries.getBar(indexOfExecutedBar).getOpenPrice());
             TradeDto executedTrade = new TradeDto();
             executedTrade.setInstrument(barSeries.getName());
             executedTrade.setIndex(indexOfExecutedBar);
-            executedTrade.setDirection(StrategyEngineUtils.asTradeDirection(tradeType));
-            executedTrade.setQuantity(amount.intValue());
+            executedTrade.setDirection(strategyOrderDto.getDirection());
+            executedTrade.setQuantity(strategyOrderDto.getQuantity());
             executedTrade.setPrice(barSeries.getBar(indexOfExecutedBar).getOpenPrice().bigDecimalValue());
+            executedTrade.setTimestamp(strategyOrderDto.getTimestamp());
             return executedTrade;
         }
 

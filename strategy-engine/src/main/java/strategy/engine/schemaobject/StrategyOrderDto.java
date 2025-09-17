@@ -18,8 +18,6 @@ public class StrategyOrderDto {
     private TradeDirection direction;
     private int quantity;
     private BigDecimal price;
-    private BigDecimal slPrice;
-    private BigDecimal tpPrice;
     private BigDecimal signalStrength;
     private BigDecimal capitalAllocated;
 
@@ -30,8 +28,6 @@ public class StrategyOrderDto {
         order.setDirection(null);
         order.setQuantity(0);
         order.setPrice(null);
-        order.setSlPrice(null);
-        order.setTpPrice(null);
         order.setSignalStrength(signal.getConfidence());
         order.setCapitalAllocated(BigDecimal.ZERO);
         return order;

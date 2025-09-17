@@ -2,7 +2,6 @@ package strategy.engine.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cglib.core.Local;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.Bar;
@@ -11,20 +10,14 @@ import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.Trade;
 import org.ta4j.core.TradingRecord;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-import org.ta4j.core.num.DecimalNum;
-import org.ta4j.core.reports.TradingStatement;
-import org.ta4j.core.reports.TradingStatementGenerator;
 import strategy.engine.component.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.indicator.KallmanIndicator;
-import strategy.engine.schemaobject.HoldingDto;
-import strategy.engine.schemaobject.PortfolioDto;
 import strategy.engine.schemaobject.SignalDto;
 import strategy.engine.schemaobject.StrategyOrderDto;
 import strategy.engine.schemaobject.TradeDto;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.schemaobject.TradingReportGenerator;
-import strategy.engine.schemaobject.analysis.ExtendedTradeExecutionModel;
 import strategy.engine.schemaobject.analysis.MultiPositionTradeOnNextOpenModel;
 import strategy.engine.schemaobject.analysis.MultiPositionTradingRecord;
 import strategy.engine.service.BacktestService;
@@ -33,7 +26,6 @@ import strategy.engine.service.PortfolioService;
 import strategy.engine.service.PositionManagementService;
 import strategy.engine.strategy.TradingStrategy;
 
-import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
@@ -42,15 +34,12 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import static strategy.engine.util.StrategyEngineUtils.asTradeType;
 
 @Service
 @RequiredArgsConstructor
@@ -88,8 +77,8 @@ public class BacktestServiceImpl implements BacktestService {
             BarSeries barSeries = new BaseBarSeries(instrument);
             barSeries.setMaximumBarCount(100);
             TradingStrategy strategy = tradingStrategyFactory.create(strategyType, barSeries);
-            TradingRecord tradingRecord = new MultiPositionTradingRecord(instrument, Trade.TradeType.BUY);
-            ExtendedTradeExecutionModel tradeExecutionModel = new MultiPositionTradeOnNextOpenModel();
+            MultiPositionTradingRecord tradingRecord = new MultiPositionTradingRecord(instrument, Trade.TradeType.BUY);
+            MultiPositionTradeOnNextOpenModel tradeExecutionModel = new MultiPositionTradeOnNextOpenModel();
 
             Iterator<String> fileIterator = lines.skip(1).iterator();
             int index = 0;
@@ -99,12 +88,20 @@ public class BacktestServiceImpl implements BacktestService {
 
                 if (index > 0) {
                     SignalDto newSignal = strategy.evaluate(index - 1);
-                    StrategyOrderDto strategyOrderDto = positionManagementService.createOrderForLongPosition(instrument, newSignal);
+                    StrategyOrderDto order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
+                    if (null == order) {
+                        order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
+                    }
 
-                    if (strategyOrderDto.getQuantity() > 0) {
-                        TradeDto executedOrder = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, DecimalNum.valueOf(strategyOrderDto.getQuantity()), asTradeType(strategyOrderDto.getDirection()));
-                        executedOrder.setTimestamp(bar.getEndTime().minus(bar.getTimePeriod()));
-                        portfolioService.applyOrder(executedOrder);
+                    if (null != order.getDirection()) {
+                        if (order.getQuantity() > 0) {
+                            TradeDto executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
+
+                            portfolioService.applyTrade(executedTrade, tradingRecord);
+                            positionManagementService.updateSlTpForInstrument(instrument);
+                        } else {
+                            log.debug("{}: index: {} No trade as quantity too low", instrument, index - 1);
+                        }
                     }
                 }
 

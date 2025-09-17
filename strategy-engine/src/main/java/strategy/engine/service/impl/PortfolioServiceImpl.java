@@ -1,16 +1,21 @@
 package strategy.engine.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import strategy.engine.schemaobject.HoldingDto;
 import strategy.engine.schemaobject.PortfolioDto;
 import strategy.engine.schemaobject.TradeDto;
+import strategy.engine.schemaobject.analysis.MultiPositionTradingRecord;
 import strategy.engine.service.PortfolioService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+import static strategy.engine.util.StrategyEngineUtils.sanitize;
+
 @Service
+@Slf4j
 public class PortfolioServiceImpl implements PortfolioService {
 
     private final PortfolioDto portfolioDto = new PortfolioDto();
@@ -30,7 +35,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     public void resetPortfolio(BigDecimal newCapital) {
         portfolioDto.getHoldings().clear();
-        portfolioDto.getTradeDtoList().clear();
         portfolioDto.setAvailableCapital(newCapital);
         portfolioDto.setRealizedPnL(BigDecimal.ZERO);
         portfolioDto.setTotalCapital(newCapital);
@@ -40,20 +44,22 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void applyOrder(TradeDto tradeDto) {
+    public void applyTrade(TradeDto tradeDto, MultiPositionTradingRecord tradingRecord) {
         if (tradeDto == null || tradeDto.getQuantity() == 0) return;
 
         switch (tradeDto.getDirection()) {
-            case BUY -> processBuy(tradeDto);
-            case SELL -> processSell(tradeDto);
+            case BUY -> processBuy(tradeDto, tradingRecord);
+            case SELL -> processSell(tradeDto, tradingRecord);
         }
 
+        HoldingDto holding = portfolioDto.getHoldings().get(tradeDto.getInstrument());
+        log.debug("{}: invested capital: {} Avg Entry Price: {} Quantity: {}", holding.getInstrument(), sanitize(holding.getCurrentInvestedCapital()), sanitize(holding.getAvgEntryPrice()), holding.getQuantity());
         portfolioDto.setLastUpdated();
     }
 
     @Override
     public HoldingDto getCurrentHoldings(String instrument) {
-        return portfolioDto.getHoldings().get(instrument);
+        return portfolioDto.getHoldings().computeIfAbsent(instrument, HoldingDto::new);
     }
 
     @Override
@@ -66,68 +72,66 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolioDto;
     }
 
-    private void processBuy(TradeDto tradeDto) {
+    private void processBuy(TradeDto tradeDto, MultiPositionTradingRecord tradingRecord) {
         String symbol = tradeDto.getInstrument();
-        BigDecimal cost = tradeDto.getPrice().multiply(BigDecimal.valueOf(tradeDto.getQuantity()));
 
-        if (portfolioDto.getAvailableCapital().compareTo(cost) < 0) {
+        HoldingDto holding = portfolioDto.getHoldings().getOrDefault(symbol, new HoldingDto(symbol));
+        // trading record is called first to log trade so it always has latest information of open trades
+        BigDecimal newInvestedCapital = calculateCurrentInvestedCapital(tradingRecord);
+        BigDecimal tradeOriginalCost = newInvestedCapital.subtract(holding.getCurrentInvestedCapital());
+
+        if (portfolioDto.getAvailableCapital().compareTo(tradeOriginalCost) < 0) {
             throw new IllegalStateException("BUY trade cannot exceed available capital");
         }
 
-        HoldingDto holding = portfolioDto.getHoldings().getOrDefault(symbol, new HoldingDto());
-        holding.setInstrument(symbol);
-
-        // Calculate new average price
-        int existingQty = holding.getQuantity();
-        BigDecimal existingCost = holding.getAvgEntryPrice() != null
-            ? holding.getAvgEntryPrice().multiply(BigDecimal.valueOf(existingQty))
-            : BigDecimal.ZERO;
-
-        BigDecimal newTotalCost = existingCost.add(cost);
-        int newQty = existingQty + tradeDto.getQuantity();
+        int newQty = holding.getQuantity() + tradeDto.getQuantity();
 
         holding.setQuantity(newQty);
-        holding.setAvgEntryPrice(newTotalCost.divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP));
+        holding.setAvgEntryPrice(newInvestedCapital.divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP));
+        // always update by difference of new capital and current capital -> original cost of trade
+        updateInvestedCapital(holding, tradeOriginalCost);
 
-        updateInvestedCapital(holding, cost);
         portfolioDto.getHoldings().put(symbol, holding);
-        portfolioDto.setAvailableCapital(portfolioDto.getAvailableCapital().subtract(cost));
-
-        portfolioDto.getTradeDtoList().add(tradeDto);
+        portfolioDto.setAvailableCapital(portfolioDto.getAvailableCapital().subtract(tradeOriginalCost));
     }
 
-    private void processSell(TradeDto tradeDto) {
+    private BigDecimal calculateCurrentInvestedCapital(MultiPositionTradingRecord tradingRecord) {
+        return tradingRecord.getCurrentInvestedCapital().bigDecimalValue();
+    }
+
+    private void processSell(TradeDto tradeDto, MultiPositionTradingRecord tradingRecord) {
         String symbol = tradeDto.getInstrument();
-        HoldingDto holding = portfolioDto.getHoldings().get(symbol);
-        if (holding == null || holding.getQuantity() < tradeDto.getQuantity()) return;
+        HoldingDto holding = portfolioDto.getHoldings().getOrDefault(symbol, new HoldingDto(symbol));
+        // trading record is called first to log trade so it always has latest information of open trades
+        BigDecimal newInvestedCapital = calculateCurrentInvestedCapital(tradingRecord);
+        BigDecimal tradeOriginalCost = newInvestedCapital.subtract(holding.getCurrentInvestedCapital()); // -ve of invested value
+
+        if (holding.getQuantity() < tradeDto.getQuantity()) return;
 
         int sellQty = tradeDto.getQuantity();
-        BigDecimal entryPrice = holding.getAvgEntryPrice();
+        int newQty = holding.getQuantity() - sellQty;
         BigDecimal value = tradeDto.getPrice().multiply(BigDecimal.valueOf(sellQty));
-        BigDecimal buyCost = entryPrice.multiply(BigDecimal.valueOf(sellQty));
-        BigDecimal pnl = value.subtract(buyCost);
+        BigDecimal pnl = value.add(tradeOriginalCost);
 
         // Update holding
-        holding.setQuantity(holding.getQuantity() - sellQty);
-        if (holding.getQuantity() == 0) {
-            portfolioDto.getHoldings().remove(symbol);
+        holding.setQuantity(newQty);
+        if (0 == newQty) {
+            holding.setAvgEntryPrice(BigDecimal.ZERO);
         } else {
-            portfolioDto.getHoldings().put(symbol, holding);
+            holding.setAvgEntryPrice(newInvestedCapital.divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP));
         }
-
-        // Update capital and PnL
-        updateInvestedCapital(holding, value.multiply(BigDecimal.valueOf(-1)));
+        updateInvestedCapital(holding, tradeOriginalCost);
+        portfolioDto.getHoldings().put(symbol, holding);
         portfolioDto.setAvailableCapital(portfolioDto.getAvailableCapital().add(value));
         portfolioDto.setRealizedPnL(portfolioDto.getRealizedPnL().add(pnl));
-        portfolioDto.getTradeDtoList().add(tradeDto);
     }
 
-    private void updateInvestedCapital(HoldingDto holding, BigDecimal cost) {
-        holding.setCurrentInvestedCapital(holding.getCurrentInvestedCapital().add(cost));
+    private void updateInvestedCapital(HoldingDto holding, BigDecimal costOfOpenTrade) {
+        holding.setCurrentInvestedCapital(holding.getCurrentInvestedCapital().add(costOfOpenTrade));
         if (holding.getCurrentInvestedCapital().compareTo(holding.getMaxInvestedCapital()) > 0) {
             holding.setMaxInvestedCapital(holding.getCurrentInvestedCapital());
         }
-        portfolioDto.setCurrentInvestedCapital(portfolioDto.getCurrentInvestedCapital().add(cost));
+        portfolioDto.setCurrentInvestedCapital(portfolioDto.getCurrentInvestedCapital().add(costOfOpenTrade));
         if (portfolioDto.getCurrentInvestedCapital().compareTo(portfolioDto.getMaxInvestedCapital()) > 0) {
             portfolioDto.setMaxInvestedCapital(portfolioDto.getCurrentInvestedCapital());
         }
