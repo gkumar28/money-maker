@@ -30,5 +30,8 @@ public class TradingReport {
     private BigDecimal profit = BigDecimal.ZERO;
     private BigDecimal loss = BigDecimal.ZERO;
 
+    private int entryTradeCount;
+    private int exitTradeCount;
+
     List<TradingReport> subReports;
 }

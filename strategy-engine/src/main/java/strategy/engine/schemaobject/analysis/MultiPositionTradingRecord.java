@@ -253,6 +253,16 @@ public class MultiPositionTradingRecord implements ExtendedTradingRecord {
         return profitLoss;
     }
 
+    @Override
+    public int getEntryTradeCount() {
+        return entryTrades.size();
+    }
+
+    @Override
+    public int getExitTradeCount() {
+        return exitTrades.size();
+    }
+
     private void recordTrade(Trade trade, boolean isEntry) {
         Objects.requireNonNull(trade, "Trade should not be null");
 

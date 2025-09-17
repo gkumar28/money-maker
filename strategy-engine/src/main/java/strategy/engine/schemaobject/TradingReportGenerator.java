@@ -40,6 +40,8 @@ public class TradingReportGenerator {
         BigDecimal portfolioProfitLoss = BigDecimal.ZERO;
         BigDecimal portfolioProfit = BigDecimal.ZERO;
         BigDecimal portfolioLoss = BigDecimal.ZERO;
+        int portfolioEntryTradeCount = 0;
+        int portfolioExitTradeCount = 0;
 
         for (String instrument: tradingRecords.keySet()) {
             TradingReport instrumentReport = generate(instrument);
@@ -53,6 +55,8 @@ public class TradingReportGenerator {
             portfolioProfitLoss = portfolioProfitLoss.add(instrumentReport.getProfitLoss());
             portfolioProfit = portfolioProfit.add(instrumentReport.getProfit());
             portfolioLoss = portfolioLoss.add(instrumentReport.getLoss());
+            portfolioEntryTradeCount += instrumentReport.getEntryTradeCount();
+            portfolioExitTradeCount += instrumentReport.getExitTradeCount();
         }
 
         // Portfolio level profit loss %
@@ -75,6 +79,9 @@ public class TradingReportGenerator {
         portfolioReport.setProfitLossPercentage(portfolioProfitLossPercentage);
         portfolioReport.setProfit(portfolioProfit);
         portfolioReport.setLoss(portfolioLoss);
+
+        portfolioReport.setEntryTradeCount(portfolioEntryTradeCount);
+        portfolioReport.setExitTradeCount(portfolioExitTradeCount);
 
         portfolioReport.setSubReports(subReports);
 
@@ -154,6 +161,9 @@ public class TradingReportGenerator {
         instrumentReport.setProfitLossPercentage(totalProfitLossPercentage);
         instrumentReport.setProfit(totalProfit);
         instrumentReport.setLoss(totalLoss);
+
+        instrumentReport.setEntryTradeCount(record.getEntryTradeCount());
+        instrumentReport.setExitTradeCount(record.getExitTradeCount());
 
         return instrumentReport;
     }

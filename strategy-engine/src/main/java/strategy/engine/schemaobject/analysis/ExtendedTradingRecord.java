@@ -16,4 +16,8 @@ public interface ExtendedTradingRecord extends TradingRecord {
 
     Num getRealizedProfitLossFromPartialPosition();
 
+    int getEntryTradeCount();
+
+    int getExitTradeCount();
+
 }
