@@ -27,7 +27,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
     // Entry position constants
     private static final double SL_MULTIPLIER = 0.05;
-    private static final double TP_MULTIPLIER = 0.2;
+    private static final double TP_MULTIPLIER = 0.15;
 
     // Exit position constants
     private static final double MIN_CONFIDENCE_TO_SELL = 0.5;
@@ -59,6 +59,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     public StrategyOrderDto calculateLongPositionExitSize(String instrument, SignalDto signal) {
         HoldingDto holdings = portfolioService.getCurrentHoldings(instrument);
         if (null == holdings || holdings.getQuantity() == 0) {
+            log.debug("{}: No Exit order as no current holdings", instrument);
             return StrategyOrderDto.empty(instrument, signal);
         }
         int currentHoldings = holdings.getQuantity();
@@ -130,7 +131,15 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         if (slPrice.compareTo(currentPrice) < 0 && tpPrice.compareTo(currentPrice) > 0) {
            return null;
         }
-        log.debug("{}: SL-TP triggered SL: {} TP: {} current: {}", instrument, sanitize(slPrice), sanitize(tpPrice), sanitize(currentPrice));
+
+        if (slPrice.compareTo(currentPrice) >= 0) {
+            log.debug("{}: SL triggered SL: {} current: {}", instrument, sanitize(slPrice), sanitize(currentPrice));
+        }
+
+        if (tpPrice.compareTo(currentPrice) <= 0) {
+            log.debug("{}: TP triggered TP: {} current: {}", instrument, sanitize(tpPrice), sanitize(currentPrice));
+        }
+
 
         slPrices.remove(instrument);
         tpPrices.remove(instrument);
