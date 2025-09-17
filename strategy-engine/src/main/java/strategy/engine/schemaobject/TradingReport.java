@@ -25,10 +25,10 @@ public class TradingReport {
     private int lossCount;
 
     // performance
-    private BigDecimal totalProfitLoss = BigDecimal.ZERO;
-    private BigDecimal totalProfitLossPercentage = BigDecimal.ZERO;
-    private BigDecimal totalProfit = BigDecimal.ZERO;
-    private BigDecimal totalLoss = BigDecimal.ZERO;
+    private BigDecimal profitLoss = BigDecimal.ZERO;
+    private BigDecimal profitLossPercentage = BigDecimal.ZERO;
+    private BigDecimal profit = BigDecimal.ZERO;
+    private BigDecimal loss = BigDecimal.ZERO;
 
     List<TradingReport> subReports;
 }

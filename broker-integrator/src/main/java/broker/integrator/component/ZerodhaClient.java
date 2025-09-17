@@ -81,7 +81,7 @@ public class ZerodhaClient {
             HistoricalData data = kiteConnect.getHistoricalData(fromDate, toDate, instrument, interval, continuous, openInterest);
             return data.dataArrayList.stream().map(ohlcv -> objectMapper.convertValue(ohlcv, Bar.class)).toList();
         } catch (IOException | KiteException exception) {
-            log.error("historical-data fetch failed", exception);
+            log.error("historical-data fetch failed for instrument: {}", instrument, exception);
         }
         return List.of();
     }

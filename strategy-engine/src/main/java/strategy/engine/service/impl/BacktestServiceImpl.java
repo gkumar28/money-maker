@@ -136,15 +136,12 @@ public class BacktestServiceImpl implements BacktestService {
                                           TradingStrategy strategy,
                                           MultiPositionTradeOnNextOpenModel tradeExecutionModel,
                                           MultiPositionTradingRecord tradingRecord) {
-        Bar bar;
-        try {
-            bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(interval));
-            barSeries.addBar(bar);
-        } catch (Exception exception) {
-            log.error("{}: backtesting failed at index {}", instrument, index, exception);
+        if (!fileIterator.hasNext()) {
             return false;
         }
 
+        Bar bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(interval));
+        barSeries.addBar(bar);
 
         if (index > 0) {
             SignalDto newSignal = strategy.evaluate(index - 1);

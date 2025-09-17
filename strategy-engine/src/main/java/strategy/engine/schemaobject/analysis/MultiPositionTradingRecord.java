@@ -3,7 +3,6 @@ package strategy.engine.schemaobject.analysis;
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.Position;
 import org.ta4j.core.Trade;
-import org.ta4j.core.TradingRecord;
 import org.ta4j.core.analysis.cost.CostModel;
 import org.ta4j.core.analysis.cost.ZeroCostModel;
 import org.ta4j.core.num.DecimalNum;
@@ -17,7 +16,7 @@ import java.util.Queue;
 import java.util.function.Function;
 
 @Slf4j
-public class MultiPositionTradingRecord implements TradingRecord {
+public class MultiPositionTradingRecord implements ExtendedTradingRecord {
 
     private final String name;
     private final transient Function<Number, Num> numFunction;
@@ -193,6 +192,7 @@ public class MultiPositionTradingRecord implements TradingRecord {
         return this.endIndex;
     }
 
+    @Override
     public Num getCurrentInvestedCapital() {
         if (openPositions.isEmpty()) {
             return numFunction.apply(0);
@@ -210,6 +210,47 @@ public class MultiPositionTradingRecord implements TradingRecord {
         }
 
         return investedCapital;
+    }
+
+    @Override
+    public List<Trade> getOpenPositions() {
+        return openPositions.stream().toList();
+    }
+
+    @Override
+    public Num getRealizedCapitalFromPartialPosition() {
+        if (null == aggregatePartialExit || aggregatePartialExit.getAmount().isZero() || openPositions.isEmpty()) {
+            return numFunction.apply(0);
+        }
+
+        Num realizedInvestedCapital = numFunction.apply(0);
+        Num amount = numFunction.apply(aggregatePartialExit.getAmount().bigDecimalValue());
+        Iterator<Trade> openPositionIterator = openPositions.iterator();
+        while(openPositionIterator.hasNext() && amount.isPositive()) {
+            Trade openTrade = openPositionIterator.next();
+            realizedInvestedCapital = amount.min(openTrade.getAmount()).multipliedBy(openTrade.getPricePerAsset());
+            amount = amount.minus(openTrade.getAmount()).max(numFunction.apply(0));
+        }
+
+        return realizedInvestedCapital;
+    }
+
+    @Override
+    public Num getRealizedProfitLossFromPartialPosition() {
+        if (null == aggregatePartialExit || aggregatePartialExit.getAmount().isZero() || openPositions.isEmpty()) {
+            return numFunction.apply(0);
+        }
+
+        Num profitLoss = numFunction.apply(aggregatePartialExit.getValue().bigDecimalValue());
+        Num amount = numFunction.apply(aggregatePartialExit.getAmount().bigDecimalValue());
+        Iterator<Trade> openPositionIterator = openPositions.iterator();
+        while(openPositionIterator.hasNext() && amount.isPositive()) {
+            Trade openTrade = openPositionIterator.next();
+            profitLoss = profitLoss.minus(amount.min(openTrade.getAmount()).multipliedBy(openTrade.getPricePerAsset()));
+            amount = amount.minus(openTrade.getAmount()).max(numFunction.apply(0));
+        }
+
+        return profitLoss;
     }
 
     private void recordTrade(Trade trade, boolean isEntry) {

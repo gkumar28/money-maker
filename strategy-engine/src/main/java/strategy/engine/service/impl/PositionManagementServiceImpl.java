@@ -27,7 +27,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
     // Entry position constants
     private static final double SL_MULTIPLIER = 0.05;
-    private static final double TP_MULTIPLIER = 0.15;
+    private static final double TP_MULTIPLIER = 0.2;
 
     // Exit position constants
     private static final double MIN_CONFIDENCE_TO_SELL = 0.5;
