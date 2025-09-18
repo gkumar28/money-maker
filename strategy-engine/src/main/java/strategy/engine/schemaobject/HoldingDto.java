@@ -11,6 +11,7 @@ public class HoldingDto {
     private String instrument;
     private int quantity = 0;
     private BigDecimal avgEntryPrice = BigDecimal.ZERO;
+    private BigDecimal lastTradePrice = BigDecimal.ZERO;
 
     private BigDecimal currentInvestedCapital = BigDecimal.ZERO;
     private BigDecimal maxInvestedCapital = BigDecimal.ZERO;

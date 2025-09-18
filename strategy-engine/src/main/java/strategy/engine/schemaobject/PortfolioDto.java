@@ -5,9 +5,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import java.time.ZonedDateTime;
@@ -15,7 +13,7 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor
 @Data
 public class PortfolioDto {
-    private BigDecimal totalCapital;
+    private BigDecimal initialCapital;
     private BigDecimal availableCapital;
     private BigDecimal currentInvestedCapital;
     private BigDecimal maxInvestedCapital;

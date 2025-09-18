@@ -13,11 +13,13 @@ import java.util.List;
 public class TradingReport {
 
     private String instrument;
-    private BigDecimal totalCapital;
+    private BigDecimal initialCapital;
+    private BigDecimal availableCapital;
     private BigDecimal currentInvestedCapital = BigDecimal.ZERO; // capital invested as of end of time range
     private BigDecimal maxInvestedCapital = BigDecimal.ZERO; // maximum capital invested at a point of time
     private BigDecimal totalInvestedCapital = BigDecimal.ZERO; // capital invested over the time range
     private BigDecimal realizedPnL = BigDecimal.ZERO;
+    private BigDecimal unrealizedPnL = BigDecimal.ZERO;
 
     // position stats
     private int profitCount;

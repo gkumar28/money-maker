@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ExtendedTradingRecord extends TradingRecord {
 
-    Num getCurrentInvestedCapital();
+    Num getUnRealizedCapitalInPartialPosition();
 
     List<Trade> getOpenPositions();
 

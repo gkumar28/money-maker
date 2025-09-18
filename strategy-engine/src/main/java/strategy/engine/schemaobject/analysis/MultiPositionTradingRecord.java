@@ -193,7 +193,7 @@ public class MultiPositionTradingRecord implements ExtendedTradingRecord {
     }
 
     @Override
-    public Num getCurrentInvestedCapital() {
+    public Num getUnRealizedCapitalInPartialPosition() {
         if (openPositions.isEmpty()) {
             return numFunction.apply(0);
         }

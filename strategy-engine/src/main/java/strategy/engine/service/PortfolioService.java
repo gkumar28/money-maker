@@ -22,4 +22,6 @@ public interface PortfolioService {
     List<String> getInstruments();
 
     PortfolioDto getPortfolio();
+
+    void updateLastTradedPrice(String instrument, BigDecimal currentPrice);
 }

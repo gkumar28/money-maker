@@ -144,6 +144,7 @@ public class BacktestServiceImpl implements BacktestService {
         barSeries.addBar(bar);
 
         if (index > 0) {
+            portfolioService.updateLastTradedPrice(instrument, bar.getClosePrice().bigDecimalValue());
             SignalDto newSignal = strategy.evaluate(index - 1);
             StrategyOrderDto order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
             if (null == order) {

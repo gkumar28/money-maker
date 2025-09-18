@@ -22,12 +22,12 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     public BigDecimal getTotalValue() {
-        return portfolioDto.getAvailableCapital().add(portfolioDto.getRealizedPnL());
+        return portfolioDto.getAvailableCapital();
     }
 
     @Override
-    public void init(BigDecimal totalCapital, BigDecimal availableCapital) {
-        portfolioDto.setTotalCapital(totalCapital);
+    public void init(BigDecimal initialCapital, BigDecimal availableCapital) {
+        portfolioDto.setInitialCapital(initialCapital);
         portfolioDto.setAvailableCapital(availableCapital);
         portfolioDto.setLastUpdated();
     }
@@ -37,7 +37,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioDto.getHoldings().clear();
         portfolioDto.setAvailableCapital(newCapital);
         portfolioDto.setRealizedPnL(BigDecimal.ZERO);
-        portfolioDto.setTotalCapital(newCapital);
+        portfolioDto.setInitialCapital(newCapital);
         portfolioDto.setCurrentInvestedCapital(BigDecimal.ZERO);
         portfolioDto.setMaxInvestedCapital(BigDecimal.ZERO);
         portfolioDto.setLastUpdated();
@@ -72,6 +72,16 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolioDto;
     }
 
+    @Override
+    public void updateLastTradedPrice(String instrument, BigDecimal currentPrice) {
+        HoldingDto holding = getCurrentHoldings(instrument);
+        if (holding.getQuantity() == 0) {
+            return;
+        }
+
+        holding.setLastTradePrice(currentPrice);
+    }
+
     private void processBuy(TradeDto tradeDto, MultiPositionTradingRecord tradingRecord) {
         String symbol = tradeDto.getInstrument();
 
@@ -96,7 +106,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     private BigDecimal calculateCurrentInvestedCapital(MultiPositionTradingRecord tradingRecord) {
-        return tradingRecord.getCurrentInvestedCapital().bigDecimalValue();
+        return tradingRecord.getUnRealizedCapitalInPartialPosition().bigDecimalValue();
     }
 
     private void processSell(TradeDto tradeDto, MultiPositionTradingRecord tradingRecord) {

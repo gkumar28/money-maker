@@ -27,13 +27,11 @@ public class TradingReportGenerator {
     public TradingReport generate() {
         TradingReport portfolioReport = new TradingReport();
 
-        BigDecimal totalCapital = portfolioDto.getTotalCapital() != null ? portfolioDto.getTotalCapital() : BigDecimal.ZERO;
-        portfolioReport.setTotalCapital(totalCapital);
-
         List<TradingReport> subReports = new ArrayList<>();
 
         BigDecimal portfolioTotalInvestedCapital = BigDecimal.ZERO;
         BigDecimal portfolioRealizedPnL = BigDecimal.ZERO;
+        BigDecimal portfolioUnrealizedPnL = BigDecimal.ZERO;
         int portfolioProfitCount = 0;
         int portfolioBreakEvenCount = 0;
         int portfolioLossCount = 0;
@@ -49,6 +47,7 @@ public class TradingReportGenerator {
 
             portfolioTotalInvestedCapital = portfolioTotalInvestedCapital.add(instrumentReport.getTotalInvestedCapital());
             portfolioRealizedPnL = portfolioRealizedPnL.add(instrumentReport.getRealizedPnL());
+            portfolioUnrealizedPnL = portfolioUnrealizedPnL.add(instrumentReport.getUnrealizedPnL());
             portfolioProfitCount += instrumentReport.getProfitCount();
             portfolioBreakEvenCount += instrumentReport.getBreakEvenCount();
             portfolioLossCount += instrumentReport.getLossCount();
@@ -65,11 +64,13 @@ public class TradingReportGenerator {
             portfolioProfitLossPercentage = portfolioProfitLoss.divide(portfolioTotalInvestedCapital, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         }
 
-        portfolioReport.setTotalCapital(portfolioDto.getTotalCapital());
+        portfolioReport.setInitialCapital(portfolioDto.getInitialCapital());
+        portfolioReport.setAvailableCapital(portfolioDto.getAvailableCapital());
         portfolioReport.setTotalInvestedCapital(portfolioTotalInvestedCapital);
         portfolioReport.setCurrentInvestedCapital(portfolioDto.getCurrentInvestedCapital());
         portfolioReport.setMaxInvestedCapital(portfolioDto.getMaxInvestedCapital());
         portfolioReport.setRealizedPnL(portfolioRealizedPnL);
+        portfolioReport.setUnrealizedPnL(portfolioUnrealizedPnL);
 
         portfolioReport.setProfitCount(portfolioProfitCount);
         portfolioReport.setBreakEvenCount(portfolioBreakEvenCount);
@@ -95,9 +96,10 @@ public class TradingReportGenerator {
         TradingReport instrumentReport = new TradingReport();
         instrumentReport.setInstrument(instrument);
 
-        BigDecimal unrealizedInvestedCapital = record.getCurrentInvestedCapital().bigDecimalValue();
+        BigDecimal unrealizedInvestedCapital = record.getUnRealizedCapitalInPartialPosition().bigDecimalValue();
         BigDecimal realizedInvestedCapital = BigDecimal.ZERO;
         BigDecimal realizedPnL = BigDecimal.ZERO;
+        BigDecimal unrealizedPnL = holding.getLastTradePrice().multiply(BigDecimal.valueOf(holding.getQuantity())).subtract(unrealizedInvestedCapital);
 
         int profitCount = 0;
         int breakEvenCount = 0;
@@ -152,6 +154,7 @@ public class TradingReportGenerator {
         instrumentReport.setMaxInvestedCapital(holding.getMaxInvestedCapital());
         instrumentReport.setTotalInvestedCapital(realizedInvestedCapital.add(unrealizedInvestedCapital));
         instrumentReport.setRealizedPnL(realizedPnL);
+        instrumentReport.setUnrealizedPnL(unrealizedPnL);
 
         instrumentReport.setProfitCount(profitCount);
         instrumentReport.setBreakEvenCount(breakEvenCount);
