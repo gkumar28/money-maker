@@ -2,224 +2,129 @@ package strategy.engine.strategy.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.ta4j.core.TradingRecord;
 import org.ta4j.core.indicators.ATRIndicator;
-import org.ta4j.core.indicators.adx.MinusDIIndicator;
-import org.ta4j.core.indicators.adx.PlusDIIndicator;
-import org.ta4j.core.indicators.helpers.ConstantIndicator;
-import org.ta4j.core.indicators.helpers.LowPriceIndicator;
-import org.ta4j.core.indicators.helpers.LowestValueIndicator;
+import org.ta4j.core.indicators.adx.ADXIndicator;
 import org.ta4j.core.rules.CrossedDownIndicatorRule;
-import org.ta4j.core.rules.OrRule;
+import org.ta4j.core.rules.OverIndicatorRule;
+import org.ta4j.core.rules.StopLossRule;
+import org.ta4j.core.rules.TrailingStopLossRule;
+import strategy.engine.constant.enums.TradeAction;
 import strategy.engine.indicator.KallmanIndicator;
 import strategy.engine.constant.enums.TradeDirection;
-import strategy.engine.rule.DecayRule;
-import strategy.engine.rule.SurgeRule;
-import strategy.engine.schemaobject.SignalDto;
+import strategy.engine.schemaobject.Holding;
+import strategy.engine.schemaobject.Signal;
 import strategy.engine.strategy.TradingStrategy;
 import org.ta4j.core.BarSeries;
-import org.ta4j.core.BaseStrategy;
 import org.ta4j.core.Rule;
 import org.ta4j.core.indicators.EMAIndicator;
-import org.ta4j.core.indicators.MACDIndicator;
 import org.ta4j.core.indicators.RSIIndicator;
-import org.ta4j.core.indicators.SMAIndicator;
-import org.ta4j.core.indicators.adx.ADXIndicator;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-import org.ta4j.core.indicators.helpers.VolumeIndicator;
-import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.rules.CrossedUpIndicatorRule;
-import strategy.engine.util.StrategyEngineUtils;
-
-import java.math.BigDecimal;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
 public class LongTrendStrategy extends TradingStrategy {
-
-    private ATRIndicator atr;
-    private ADXIndicator adx;
-    private SMAIndicator avgVolume;
-    private RSIIndicator rsi;
-    private MACDIndicator macd;
-    private EMAIndicator macdSignal;
-    private LowestValueIndicator recentLow;
-    private PlusDIIndicator plusDI;
-    private MinusDIIndicator minusDI;
+    
     private ClosePriceIndicator close;
     private KallmanIndicator kallman;
+    private EMAIndicator ema10;
+    private EMAIndicator ema20;
+    private EMAIndicator ema50;
+    private ADXIndicator adx14;
+    private RSIIndicator rsi14;
+    private ATRIndicator atr14;
 
-    public LongTrendStrategy(BarSeries barSeries) {
-        super(barSeries);
+    private Rule entryRule;
+    private Rule expandRule;
+    private Rule trimRule;
+    private Rule exitRule;
+
+    public LongTrendStrategy(BarSeries barSeries, TradingRecord tradingRecord) {
+        super(barSeries, tradingRecord);
     }
 
     @Override
     protected void build() {
 
-        atr = new ATRIndicator(barSeries, 14);
-        adx = new ADXIndicator(barSeries, 14);
         close = new ClosePriceIndicator(barSeries);
-        rsi = new RSIIndicator(close, 14);
-        VolumeIndicator volume = new VolumeIndicator(barSeries);
-        avgVolume = new SMAIndicator(volume, 20);
+        ema10 = new EMAIndicator(close, 10);
+        ema20 = new EMAIndicator(close, 20);
+        ema50 = new EMAIndicator(close, 50);
         kallman = new KallmanIndicator(close, 0.01, 20);
-        macd = new MACDIndicator(close, 12, 26);
-        macdSignal = new EMAIndicator(macd, 9);
-
-        plusDI = new PlusDIIndicator(barSeries, 14);
-        minusDI = new MinusDIIndicator(barSeries, 14);
-        recentLow = new LowestValueIndicator(new LowPriceIndicator(barSeries), 5);
+        adx14 = new ADXIndicator(barSeries, 14);
+        rsi14 = new RSIIndicator(close, 14);
+        atr14 = new ATRIndicator(barSeries, 14);
 
         // Entry rule - shows bullish direction
-        Rule entryRule = new SurgeRule(kallman,
-            new ConstantIndicator<>(barSeries, DecimalNum.valueOf(0.3)),
-            DecimalNum.valueOf(1),
-            DecimalNum.valueOf(5))
-            .and(new CrossedUpIndicatorRule(macd, macdSignal));
+        entryRule = new OverIndicatorRule(ema10, ema50)
+            .and(new OverIndicatorRule(close, ema20))
+            .and(new CrossedUpIndicatorRule(rsi14, 40));
 
-        // Exit rule - only basis exit strength
-        Rule exitRule = new OrRule(
-                new CrossedDownIndicatorRule(rsi, DecimalNum.valueOf(65)),
-                new CrossedUpIndicatorRule(minusDI, plusDI)
-                .and(new DecayRule(kallman,
-                    new ConstantIndicator<>(barSeries, DecimalNum.valueOf(-0.1)),
-                    DecimalNum.valueOf(1),
-                    DecimalNum.valueOf(5)))
-        );
+        // Add rule - trend is going strong
+        expandRule = new OverIndicatorRule(close, ema10)
+            .and(new OverIndicatorRule(ema10, ema20))
+            .and(new OverIndicatorRule(rsi14, 55));
 
-        this.strategy =  new BaseStrategy(this.getClass().getName(), entryRule, exitRule, 5);
+        // Trim rule - trend weakening / partial trend reversal
+        trimRule = new CrossedDownIndicatorRule(rsi14, 60)
+            .and(new OverIndicatorRule(close, ema20));
+
+        // Exit rule - complete trend reversal
+        exitRule = new CrossedDownIndicatorRule(close, ema20)
+            .or(new CrossedDownIndicatorRule(rsi14, 45))
+            .or(new StopLossRule(close, 10))
+            .or(new TrailingStopLossRule(close, close.numOf(5), 100));
     }
 
     @Override
-    public SignalDto evaluate(int index) {
+    public Signal evaluate(int index, Holding currentHolding) {
 
-        boolean shouldEnter = strategy.shouldEnter(index);
-        boolean shouldExit = strategy.shouldExit(index);
-
-        BigDecimal atrValue = atr.getValue(index).bigDecimalValue();
-        BigDecimal adx = avgVolume.getValue(index).bigDecimalValue();
-
-        // ---- Signal Strength Logic ----
-        BigDecimal entry = shouldEnter ? calculateEntryStrength(index) : BigDecimal.ZERO;
-        BigDecimal exit =  shouldExit ? calculateExitStrength(index) : BigDecimal.ZERO;
-
-        // normalized parameters
-        BigDecimal normalizedEntry;
-        BigDecimal normalizedExit;
-        BigDecimal normalizedHold;
-
-        if (entry.add(exit).compareTo(BigDecimal.ONE) >= 0) {
-            normalizedEntry = StrategyEngineUtils.normalize(entry, BigDecimal.ZERO, entry.add(exit));
-            normalizedExit = StrategyEngineUtils.normalize(exit, BigDecimal.ZERO, entry.add(exit));
-            normalizedHold = BigDecimal.ZERO;
-        } else {
-            normalizedEntry = entry;
-            normalizedExit = exit;
-            normalizedHold = BigDecimal.ONE.subtract(entry).subtract(exit);
-        }
+        int currentQuantity = currentHolding.getQuantity();
+        boolean entry = entryRule.isSatisfied(index, tradingRecord) && currentQuantity == 0;
+        boolean add = expandRule.isSatisfied(index, tradingRecord) && currentQuantity > 0;
+        boolean trim = trimRule.isSatisfied(index, tradingRecord) && currentQuantity > 0;
+        boolean exit = exitRule.isSatisfied(index, tradingRecord) && currentQuantity > 0;
 
         TradeDirection tradeDirection;
-        BigDecimal confidence;
+        TradeAction tradeAction;
 
-        if (shouldEnter) {
+        if (entry) {
             tradeDirection = TradeDirection.BUY;
-            confidence = normalizedEntry;
-            logDebugMessage("ENTRY", index, confidence);
-        } else if (shouldExit) {
+            tradeAction = TradeAction.ENTRY;
+            logDebugMessage("ENTRY", index);
+        } else if (exit) {
             tradeDirection = TradeDirection.SELL;
-            confidence = normalizedExit;
-            logDebugMessage("EXIT", index, confidence);
-        } else {
+            tradeAction = TradeAction.EXIT;
+            logDebugMessage("EXIT", index);
+        } else if (add) {
+            tradeDirection = TradeDirection.BUY;
+            tradeAction = TradeAction.EXPAND;
+            logDebugMessage("EXPAND", index);
+        } else if (trim) {
+            tradeDirection = TradeDirection.SELL;
+            tradeAction = TradeAction.TRIM;
+            logDebugMessage("TRIM", index);
+        }
+        else {
             tradeDirection = null;
-            confidence = normalizedHold;
+            tradeAction = null;
         }
 
-        return new SignalDto(
+        return new Signal(
             tradeDirection,
-            confidence,
+            tradeAction,
             barSeries.getBar(index).getEndTime(),
             barSeries.getBar(index).getClosePrice().bigDecimalValue(),
-            atrValue,
-            adx
+            atr14.getValue(index).bigDecimalValue(),
+            adx14.getValue(index).bigDecimalValue()
         );
     }
 
-    private void logDebugMessage(String signal, int index, BigDecimal confidence) {
+    private void logDebugMessage(String signal, int index) {
         if (log.isDebugEnabled()) {
-            log.debug("{}: {} with confidence {}", barSeries.getName(), signal, confidence);
+            log.debug("{}: {} at index {}", tradingRecord.getName(), signal, index);
         }
-    }
-
-    private BigDecimal calculateEntryStrength(int index) {
-        double atrRatio = atr.getValue(index).doubleValue() / close.getValue(index).doubleValue();
-        double atrScore = 1.0 - Math.min(atrRatio, 0.05) / 0.05; // Max out at 5% ATR
-
-        double adxVal = adx.getValue(index).doubleValue();
-        double adxScore = StrategyEngineUtils.normalize(adxVal, 20, 50); // Stronger trend = higher score
-
-        double rsiVal = rsi.getValue(index).doubleValue();
-        double rsiScore = 0.0;
-
-        // Assume 35–65 is the optimal "entry zone"
-        if (rsiVal >= 35 && rsiVal <= 65) {
-            rsiScore = 1.0; // Perfect zone
-        } else if (rsiVal < 35) {
-            rsiScore = StrategyEngineUtils.normalize(rsiVal, 20, 35); // 20-35 maps to 0–1
-        } else {
-            rsiScore = StrategyEngineUtils.normalize(65 - rsiVal, 0, 15); // 65–80 maps to 1–0
-        }
-
-        double weightedScore = 0.4 * atrScore + 0.4 * adxScore + 0.2 * rsiScore;
-        return StrategyEngineUtils.roundToTwoDecimals(weightedScore);
-    }
-
-    private BigDecimal calculateExitStrength(int index) {
-        double strength = 0.0;
-        int totalWeight = 0;
-
-        // ========== Branch 1: Trend Weakening ==========
-        boolean adxDrop = adx.getValue(index - 1).isGreaterThan(DecimalNum.valueOf(25)) &&
-            adx.getValue(index).isLessThan(DecimalNum.valueOf(25));
-        boolean rsiDrop = rsi.getValue(index - 1).isGreaterThan(DecimalNum.valueOf(65)) &&
-            rsi.getValue(index).isLessThan(DecimalNum.valueOf(65));
-        boolean macdCrossDown = macd.getValue(index - 1).isGreaterThan(macdSignal.getValue(index - 1)) &&
-            macd.getValue(index).isLessThan(macdSignal.getValue(index));
-
-        if (adxDrop) {
-            strength += 0.3;
-            totalWeight += 1;
-        }
-        if (rsiDrop) {
-            strength += 0.35;
-            totalWeight += 1;
-        }
-        if (macdCrossDown) {
-            strength += 0.3;
-            totalWeight += 1;
-        }
-
-        // ========== Branch 2: Reversal ==========
-        boolean priceBreakSupport = close.getValue(index - 1).isGreaterThan(recentLow.getValue(index - 1)) &&
-            close.getValue(index).isLessThan(recentLow.getValue(index));
-        boolean diCross = minusDI.getValue(index - 1).isLessThan(plusDI.getValue(index - 1)) &&
-            minusDI.getValue(index).isGreaterThan(plusDI.getValue(index));
-        boolean kallmanDecay = kallman.getValue(index).isLessThan(DecimalNum.valueOf(-0.2));
-
-        if (priceBreakSupport) {
-            strength += 1;
-            totalWeight += 1;
-        }
-        if (diCross) {
-            strength += 1;
-            totalWeight += 1;
-        }
-        if (kallmanDecay) {
-            strength += 0.5;
-            totalWeight += 1;
-        }
-
-        // Normalize and round
-        double normalized = totalWeight > 0 ? strength / totalWeight : 0.0;
-        return StrategyEngineUtils.roundToTwoDecimals(normalized);
     }
 
 }
