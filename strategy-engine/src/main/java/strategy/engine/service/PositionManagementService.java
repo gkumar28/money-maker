@@ -1,19 +1,19 @@
 package strategy.engine.service;
 
-import strategy.engine.schemaobject.SignalDto;
-import strategy.engine.schemaobject.StrategyOrderDto;
+import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.Order;
 
 import java.math.BigDecimal;
 
 public interface PositionManagementService {
 
-    StrategyOrderDto calculateLongPositionEntrySize(String instrument, SignalDto signal);
+    Order calculateLongPositionEntrySize(String instrument, Signal signal);
 
-    StrategyOrderDto calculateLongPositionExitSize(String instrument, SignalDto signal);
+    Order calculateLongPositionExitSize(String instrument, Signal signal);
 
-    StrategyOrderDto createOrderForLongPosition(String instrument, SignalDto signal);
+    Order createOrderForLongPosition(String instrument, Signal signal);
 
-    StrategyOrderDto triggerSLTPForPosition(String instrument, SignalDto signalDto, BigDecimal currentPrice);
+    Order triggerSLTPForPosition(String instrument, Signal signal, BigDecimal currentPrice);
 
     void updateSlTpForInstrument(String instrument);
 }

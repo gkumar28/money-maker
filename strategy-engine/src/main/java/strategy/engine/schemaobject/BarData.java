@@ -9,7 +9,7 @@ import java.time.ZonedDateTime;
 
 @NoArgsConstructor
 @Data
-public class BarDataDto {
+public class BarData {
 
     @NotNull
     private Long duration;

@@ -1,9 +1,9 @@
 package strategy.engine.schemaobject.analysis;
 
 import org.ta4j.core.BarSeries;
-import strategy.engine.schemaobject.StrategyOrderDto;
-import strategy.engine.schemaobject.TradeDto;
+import strategy.engine.schemaobject.Order;
+import strategy.engine.schemaobject.Trade;
 
 public interface MultiPositionTradeExecutionModel {
-    TradeDto execute(int index, MultiPositionTradingRecord tradingRecord, BarSeries barSeries, StrategyOrderDto strategyOrderDto);
+    Trade execute(int index, MultiPositionTradingRecord tradingRecord, BarSeries barSeries, Order order);
 }

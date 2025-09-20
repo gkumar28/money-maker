@@ -10,9 +10,9 @@ import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.num.DecimalNum;
 import strategy.engine.component.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
-import strategy.engine.schemaobject.BarDataDto;
-import strategy.engine.schemaobject.SignalDto;
-import strategy.engine.schemaobject.StrategyOrderDto;
+import strategy.engine.schemaobject.BarData;
+import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.Order;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.service.BacktestService;
 import strategy.engine.service.PositionManagementService;
@@ -33,29 +33,29 @@ public class TestingApiController implements TestingApi {
     private final BacktestService backtestService;
 
     @Override
-    public ResponseEntity<List<SignalDto>> simulateSignals(String instrument, StrategyType type, List<BarDataDto> input) {
+    public ResponseEntity<List<Signal>> simulateSignals(String instrument, StrategyType type, List<BarData> input) {
 
-        List<SignalDto> result = new ArrayList<>();
+        List<Signal> result = new ArrayList<>();
         BarSeries barSeries = new BaseBarSeries(instrument.toUpperCase() + ":" + type.toString());
         barSeries.setMaximumBarCount(100);
         TradingStrategy strategy = tradingStrategyFactory.create(type, barSeries);
-        for (BarDataDto barDataDto : input) {
+        for (BarData barData : input) {
             barSeries.addBar(new BaseBar(
-                Duration.of(barDataDto.getDuration(), ChronoUnit.SECONDS),
-                barDataDto.getEndTime(),
-                barDataDto.getOpen(),
-                barDataDto.getHigh(),
-                barDataDto.getLow(),
-                barDataDto.getClose(),
-                barDataDto.getVolume(),
-                barDataDto.getAmount(),
-                barDataDto.getTrades(),
+                Duration.of(barData.getDuration(), ChronoUnit.SECONDS),
+                barData.getEndTime(),
+                barData.getOpen(),
+                barData.getHigh(),
+                barData.getLow(),
+                barData.getClose(),
+                barData.getVolume(),
+                barData.getAmount(),
+                barData.getTrades(),
                 DecimalNum::valueOf));
 
         }
 
         for (int i=0;i<input.size();i++) {
-            SignalDto signal = strategy.evaluate(i);
+            Signal signal = strategy.evaluate(i);
             result.add(signal);
         }
 
@@ -63,9 +63,9 @@ public class TestingApiController implements TestingApi {
     }
 
     @Override
-    public ResponseEntity<List<StrategyOrderDto>> simulateOrders(String instrument, List<SignalDto> input) {
-        List<StrategyOrderDto> result = new ArrayList<>();
-        for (SignalDto signal: input) {
+    public ResponseEntity<List<Order>> simulateOrders(String instrument, List<Signal> input) {
+        List<Order> result = new ArrayList<>();
+        for (Signal signal: input) {
             result.add(positionManagementService.createOrderForLongPosition(instrument, signal));
         }
 

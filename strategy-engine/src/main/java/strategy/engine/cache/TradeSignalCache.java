@@ -1,6 +1,6 @@
 package strategy.engine.cache;
 
-import strategy.engine.schemaobject.SignalDto;
+import strategy.engine.schemaobject.Signal;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
@@ -11,13 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 public class TradeSignalCache {
 
-    private final ConcurrentHashMap<String, SignalDto> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Signal> cache = new ConcurrentHashMap<>();
 
-    public SignalDto get(String instrument) {
-        return cache.computeIfAbsent(instrument, key -> new SignalDto(null, ZonedDateTime.now()));
+    public Signal get(String instrument) {
+        return cache.computeIfAbsent(instrument, key -> new Signal(null, ZonedDateTime.now()));
     }
 
-    public void update(String instrument, SignalDto newState) {
+    public void update(String instrument, Signal newState) {
         cache.put(instrument, newState);
     }
 }

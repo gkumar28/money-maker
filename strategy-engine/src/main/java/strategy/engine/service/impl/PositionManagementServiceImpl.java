@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import strategy.engine.constant.enums.TradeDirection;
-import strategy.engine.schemaobject.HoldingDto;
-import strategy.engine.schemaobject.SignalDto;
-import strategy.engine.schemaobject.StrategyOrderDto;
+import strategy.engine.schemaobject.Holding;
+import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.Order;
 import strategy.engine.service.PortfolioService;
 import strategy.engine.service.PositionManagementService;
 
@@ -44,9 +44,9 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
 
     @Override
-    public StrategyOrderDto createOrderForLongPosition(String instrument, SignalDto signal) {
+    public Order createOrderForLongPosition(String instrument, Signal signal) {
         if (null == signal.getDirection()) {
-            return StrategyOrderDto.empty(instrument, signal);
+            return Order.empty(instrument, signal);
         }
 
         return switch (signal.getDirection()) {
@@ -56,11 +56,11 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     @Override
-    public StrategyOrderDto calculateLongPositionExitSize(String instrument, SignalDto signal) {
-        HoldingDto holdings = portfolioService.getCurrentHoldings(instrument);
+    public Order calculateLongPositionExitSize(String instrument, Signal signal) {
+        Holding holdings = portfolioService.getCurrentHoldings(instrument);
         if (null == holdings || holdings.getQuantity() == 0) {
             log.debug("{}: No Exit order as no current holdings", instrument);
-            return StrategyOrderDto.empty(instrument, signal);
+            return Order.empty(instrument, signal);
         }
         int currentHoldings = holdings.getQuantity();
         BigDecimal confidence = signal.getConfidence(); // C
@@ -84,7 +84,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         }
 
         log.debug("{}: Exit order price: quantity: {} price: {}", instrument, quantity, sanitize(signal.getPrice()));
-        return new StrategyOrderDto(
+        return new Order(
             instrument,
             signal.getTimestamp(),
             TradeDirection.SELL,
@@ -96,7 +96,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     @Override
-    public StrategyOrderDto calculateLongPositionEntrySize(String instrument, SignalDto signal) {
+    public Order calculateLongPositionEntrySize(String instrument, Signal signal) {
         // Base capital allocation (2% of account)
         BigDecimal baseCapital = portfolioService.getTotalValue().multiply(BigDecimal.valueOf(MAX_CAPITAL_ALLOCATION_PCT));
         BigDecimal finalCapitalAllocation = getFinalCapitalAllocation(signal, baseCapital);
@@ -108,7 +108,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         }
 
         log.debug("{}: Entry order price: quantity: {} price: {}", instrument, quantity, sanitize(signal.getPrice()));
-        return new StrategyOrderDto(
+        return new Order(
             instrument,
             signal.getTimestamp(),
             TradeDirection.BUY,
@@ -120,8 +120,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     @Override
-    public StrategyOrderDto triggerSLTPForPosition(String instrument, SignalDto signalDto, BigDecimal currentPrice) {
-        HoldingDto currentHolding = portfolioService.getPortfolio().getHoldings().getOrDefault(instrument, new HoldingDto(instrument));
+    public Order triggerSLTPForPosition(String instrument, Signal signal, BigDecimal currentPrice) {
+        Holding currentHolding = portfolioService.getPortfolio().getHoldings().getOrDefault(instrument, new Holding(instrument));
         BigDecimal slPrice = slPrices.get(instrument);
         BigDecimal tpPrice = tpPrices.get(instrument);
         if (0 == currentHolding.getQuantity() || slPrice == null || tpPrice == null) {
@@ -143,8 +143,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
         slPrices.remove(instrument);
         tpPrices.remove(instrument);
-        return new StrategyOrderDto(instrument,
-            signalDto.getTimestamp(),
+        return new Order(instrument,
+            signal.getTimestamp(),
             TradeDirection.SELL,
             currentHolding.getQuantity(),
             currentPrice,
@@ -152,7 +152,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
             null);
     }
 
-    private BigDecimal getFinalCapitalAllocation(SignalDto signal, BigDecimal baseCapital) {
+    private BigDecimal getFinalCapitalAllocation(Signal signal, BigDecimal baseCapital) {
 
         BigDecimal trendMultiplier = BigDecimal.ONE;
         if (signal.getAdx().doubleValue() < 20) {
@@ -173,7 +173,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     private boolean updateStopLoss(String instrument) {
-        HoldingDto holding = portfolioService.getCurrentHoldings(instrument);
+        Holding holding = portfolioService.getCurrentHoldings(instrument);
         if (holding.getQuantity() == 0) {
             return false;
         }
@@ -190,7 +190,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     private boolean updateTakeProfit(String instrument) {
-        HoldingDto holding = portfolioService.getCurrentHoldings(instrument);
+        Holding holding = portfolioService.getCurrentHoldings(instrument);
         if (holding.getQuantity() == 0) {
             return false;
         }

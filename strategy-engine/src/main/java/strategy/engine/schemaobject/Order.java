@@ -11,7 +11,7 @@ import java.time.ZonedDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class StrategyOrderDto {
+public class Order {
 
     private String instrument;
     private ZonedDateTime timestamp;
@@ -21,8 +21,8 @@ public class StrategyOrderDto {
     private BigDecimal signalStrength;
     private BigDecimal capitalAllocated;
 
-    public static StrategyOrderDto empty(String instrument, SignalDto signal) {
-        StrategyOrderDto order = new StrategyOrderDto();
+    public static Order empty(String instrument, Signal signal) {
+        Order order = new Order();
         order.setInstrument(instrument);
         order.setTimestamp(signal.getTimestamp());
         order.setDirection(null);

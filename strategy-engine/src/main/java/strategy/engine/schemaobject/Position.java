@@ -7,13 +7,13 @@ import strategy.engine.util.StrategyEngineUtils;
 
 @Data
 @RequiredArgsConstructor
-public class PositionDto {
+public class Position {
 
-    private TradeDto entry;
-    private TradeDto exit;
+    private Trade entry;
+    private Trade exit;
     private final TradeDirection startingType;
 
-    public PositionDto(TradeDto entry) {
+    public Position(Trade entry) {
         this.entry = entry;
         this.startingType = entry.getDirection();
     }
@@ -42,7 +42,7 @@ public class PositionDto {
         return entry.getQuantity() - exit.getQuantity() > 0;
     }
 
-    public TradeDto updateExitWith(TradeDto newPartialExit) {
+    public Trade updateExitWith(Trade newPartialExit) {
         if (newPartialExit == null) {
             throw new IllegalArgumentException("New exit trade must not be null");
         }

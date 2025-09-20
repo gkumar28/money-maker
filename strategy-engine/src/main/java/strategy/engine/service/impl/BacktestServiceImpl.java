@@ -7,15 +7,13 @@ import org.springframework.stereotype.Service;
 import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
-import org.ta4j.core.Trade;
-import org.ta4j.core.TradingRecord;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import strategy.engine.component.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.indicator.KallmanIndicator;
-import strategy.engine.schemaobject.SignalDto;
-import strategy.engine.schemaobject.StrategyOrderDto;
-import strategy.engine.schemaobject.TradeDto;
+import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.Order;
+import strategy.engine.schemaobject.Trade;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.schemaobject.TradingReportGenerator;
 import strategy.engine.schemaobject.analysis.MultiPositionTradeOnNextOpenModel;
@@ -118,7 +116,7 @@ public class BacktestServiceImpl implements BacktestService {
             TradingStrategy strategy = tradingStrategyFactory.create(strategyType, series);
             strategies.put(instrument, strategy);
 
-            MultiPositionTradingRecord tradingRecord = new MultiPositionTradingRecord(instrument, Trade.TradeType.BUY);
+            MultiPositionTradingRecord tradingRecord = new MultiPositionTradingRecord(instrument, org.ta4j.core.Trade.TradeType.BUY);
             tradingRecords.put(instrument, tradingRecord);
         } catch (Exception e) {
             log.error("Failed to initialize instrument {}", instrument, e);
@@ -145,15 +143,15 @@ public class BacktestServiceImpl implements BacktestService {
 
         if (index > 0) {
             portfolioService.updateLastTradedPrice(instrument, bar.getClosePrice().bigDecimalValue());
-            SignalDto newSignal = strategy.evaluate(index - 1);
-            StrategyOrderDto order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
+            Signal newSignal = strategy.evaluate(index - 1);
+            Order order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
             if (null == order) {
                 order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
             }
 
             if (null != order.getDirection()) {
                 if (order.getQuantity() > 0) {
-                    TradeDto executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
+                    Trade executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
 
                     portfolioService.applyTrade(executedTrade, tradingRecord);
                     positionManagementService.updateSlTpForInstrument(instrument);

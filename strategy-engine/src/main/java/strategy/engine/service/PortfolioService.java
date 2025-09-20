@@ -1,15 +1,15 @@
 package strategy.engine.service;
 
-import strategy.engine.schemaobject.HoldingDto;
-import strategy.engine.schemaobject.PortfolioDto;
-import strategy.engine.schemaobject.TradeDto;
+import strategy.engine.schemaobject.Holding;
+import strategy.engine.schemaobject.Portfolio;
+import strategy.engine.schemaobject.Trade;
 import strategy.engine.schemaobject.analysis.MultiPositionTradingRecord;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public interface PortfolioService {
-    void applyTrade(TradeDto tradeDto, MultiPositionTradingRecord tradingRecord);
+    void applyTrade(Trade trade, MultiPositionTradingRecord tradingRecord);
 
     BigDecimal getTotalValue();
 
@@ -17,11 +17,11 @@ public interface PortfolioService {
 
     void resetPortfolio(BigDecimal newCapital);
 
-    HoldingDto getCurrentHoldings(String instrument);
+    Holding getCurrentHoldings(String instrument);
 
     List<String> getInstruments();
 
-    PortfolioDto getPortfolio();
+    Portfolio getPortfolio();
 
     void updateLastTradedPrice(String instrument, BigDecimal currentPrice);
 }

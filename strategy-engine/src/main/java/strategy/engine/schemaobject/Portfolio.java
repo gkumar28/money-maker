@@ -12,13 +12,13 @@ import java.time.ZonedDateTime;
 
 @NoArgsConstructor
 @Data
-public class PortfolioDto {
+public class Portfolio {
     private BigDecimal initialCapital;
     private BigDecimal availableCapital;
     private BigDecimal currentInvestedCapital;
     private BigDecimal maxInvestedCapital;
     private BigDecimal realizedPnL = BigDecimal.ZERO;
-    private Map<String, HoldingDto> holdings = new HashMap<>();
+    private Map<String, Holding> holdings = new HashMap<>();
     private ZonedDateTime lastUpdated;
 
     public void setLastUpdated() {

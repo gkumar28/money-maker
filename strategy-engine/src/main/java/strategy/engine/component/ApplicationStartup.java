@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.ta4j.core.BarSeries;
 import strategy.engine.cache.BarDataCache;
 import strategy.engine.constant.enums.StrategyType;
-import strategy.engine.schemaobject.PortfolioDto;
 import strategy.engine.service.PortfolioService;
 import strategy.engine.strategy.TradingStrategy;
 

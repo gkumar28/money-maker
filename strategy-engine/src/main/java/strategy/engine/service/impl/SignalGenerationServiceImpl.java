@@ -4,10 +4,10 @@ import org.ta4j.core.BarSeries;
 import strategy.engine.cache.BarDataCache;
 import strategy.engine.cache.TradeSignalCache;
 import strategy.engine.component.TradingStrategyRegistry;
-import strategy.engine.schemaobject.SignalDto;
+import strategy.engine.schemaobject.Signal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import strategy.engine.schemaobject.StrategyOrderDto;
+import strategy.engine.schemaobject.Order;
 import strategy.engine.service.SignalGenerationService;
 import strategy.engine.service.RedisService;
 import org.springframework.stereotype.Service;
@@ -28,8 +28,8 @@ public class SignalGenerationServiceImpl implements SignalGenerationService {
     @Override
     public void onNewBarEvent(String instrument, Bar bar) {
         BarSeries barSeries = barDataCache.updateAndGetInstrument(instrument, bar);
-        SignalDto newSignal = strategyRegistry.get(instrument).evaluate(barSeries.getEndIndex());
-        StrategyOrderDto strategyOrderDto = positionManagementService.createOrderForLongPosition(instrument, newSignal);
+        Signal newSignal = strategyRegistry.get(instrument).evaluate(barSeries.getEndIndex());
+        Order order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
 
         tradeSignalCache.update(instrument, newSignal);
         if (null == newSignal.getDirection()) {
@@ -38,6 +38,6 @@ public class SignalGenerationServiceImpl implements SignalGenerationService {
         }
 
         redisService.raiseSignalEvent(instrument, newSignal);
-        redisService.raiseOrderEvent(strategyOrderDto);
+        redisService.raiseOrderEvent(order);
     }
 }

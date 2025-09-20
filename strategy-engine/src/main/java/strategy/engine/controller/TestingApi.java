@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import strategy.engine.constant.enums.StrategyType;
-import strategy.engine.schemaobject.BarDataDto;
-import strategy.engine.schemaobject.SignalDto;
-import strategy.engine.schemaobject.StrategyOrderDto;
+import strategy.engine.schemaobject.BarData;
+import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.Order;
 import strategy.engine.schemaobject.TradingReport;
 
 import java.time.LocalDate;
@@ -21,12 +21,12 @@ import java.util.List;
 public interface TestingApi {
 
     @PostMapping("/simulate-signals")
-    ResponseEntity<List<SignalDto>> simulateSignals(@RequestParam @NotEmpty String instrument,
-                                                    @RequestParam @NotEmpty StrategyType strategy,
-                                                    @RequestBody @NotEmpty @Valid List<BarDataDto> input);
+    ResponseEntity<List<Signal>> simulateSignals(@RequestParam @NotEmpty String instrument,
+                                                 @RequestParam @NotEmpty StrategyType strategy,
+                                                 @RequestBody @NotEmpty @Valid List<BarData> input);
 
     @PostMapping("/simulate-orders")
-    ResponseEntity<List<StrategyOrderDto>> simulateOrders(@RequestParam String instrument, @RequestBody @NotEmpty List<SignalDto> input);
+    ResponseEntity<List<Order>> simulateOrders(@RequestParam String instrument, @RequestBody @NotEmpty List<Signal> input);
 
     @PostMapping("/run-back-test")
     ResponseEntity<TradingReport> backtest(@RequestParam List<String> instruments,

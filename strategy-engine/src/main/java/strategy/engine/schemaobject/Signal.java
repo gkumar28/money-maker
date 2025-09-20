@@ -11,9 +11,9 @@ import java.time.ZonedDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SignalDto {
+public class Signal {
 
-    public SignalDto(TradeDirection direction, ZonedDateTime timestamp) {
+    public Signal(TradeDirection direction, ZonedDateTime timestamp) {
         this.direction = direction;
         this.timestamp = timestamp;
     }

@@ -13,11 +13,11 @@ import java.util.Map;
 
 @Data
 public class TradingReportGenerator {
-    private final PortfolioDto portfolioDto;
+    private final Portfolio portfolio;
     private final Map<String, ExtendedTradingRecord> tradingRecords = new HashMap<>();
 
-    public TradingReportGenerator(PortfolioDto portfolioDto) {
-        this.portfolioDto = portfolioDto;
+    public TradingReportGenerator(Portfolio portfolio) {
+        this.portfolio = portfolio;
     }
 
     public void setTradingRecord(String instrument, ExtendedTradingRecord tradingRecord) {
@@ -64,11 +64,11 @@ public class TradingReportGenerator {
             portfolioProfitLossPercentage = portfolioProfitLoss.divide(portfolioTotalInvestedCapital, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         }
 
-        portfolioReport.setInitialCapital(portfolioDto.getInitialCapital());
-        portfolioReport.setAvailableCapital(portfolioDto.getAvailableCapital());
+        portfolioReport.setInitialCapital(portfolio.getInitialCapital());
+        portfolioReport.setAvailableCapital(portfolio.getAvailableCapital());
         portfolioReport.setTotalInvestedCapital(portfolioTotalInvestedCapital);
-        portfolioReport.setCurrentInvestedCapital(portfolioDto.getCurrentInvestedCapital());
-        portfolioReport.setMaxInvestedCapital(portfolioDto.getMaxInvestedCapital());
+        portfolioReport.setCurrentInvestedCapital(portfolio.getCurrentInvestedCapital());
+        portfolioReport.setMaxInvestedCapital(portfolio.getMaxInvestedCapital());
         portfolioReport.setRealizedPnL(portfolioRealizedPnL);
         portfolioReport.setUnrealizedPnL(portfolioUnrealizedPnL);
 
@@ -91,7 +91,7 @@ public class TradingReportGenerator {
 
     private TradingReport generate(String instrument) {
         ExtendedTradingRecord record = tradingRecords.get(instrument);
-        HoldingDto holding = portfolioDto.getHoldings().getOrDefault(instrument, new HoldingDto());
+        Holding holding = portfolio.getHoldings().getOrDefault(instrument, new Holding());
 
         TradingReport instrumentReport = new TradingReport();
         instrumentReport.setInstrument(instrument);

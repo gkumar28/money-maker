@@ -1,8 +1,8 @@
 package strategy.engine.service.impl;
 
 import strategy.engine.config.external.BarConfiguration;
-import strategy.engine.schemaobject.SignalDto;
-import strategy.engine.schemaobject.StrategyOrderDto;
+import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.Order;
 import strategy.engine.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -82,35 +82,35 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public void raiseSignalEvent(String instrument, SignalDto signalDto) {
+    public void raiseSignalEvent(String instrument, Signal signal) {
         String channelName = getKey(SIGNAL, instrument);
-        String value = toSignalString(signalDto);
+        String value = toSignalString(signal);
         redisTemplate.convertAndSend(channelName, value);
     }
 
     @Override
-    public void raiseOrderEvent(StrategyOrderDto strategyOrderDto) {
-        String channelName = getKey(ORDER, strategyOrderDto.getInstrument());
-        String value = toSizedOrderString(strategyOrderDto);
+    public void raiseOrderEvent(Order order) {
+        String channelName = getKey(ORDER, order.getInstrument());
+        String value = toSizedOrderString(order);
         redisTemplate.convertAndSend(channelName, value);
     }
 
-    private String toSignalString(SignalDto signalDto) {
+    private String toSignalString(Signal signal) {
         return String.format("%s,%d,%s",
-            signalDto.getDirection(),
-            Instant.from(signalDto.getTimestamp()).toEpochMilli(),
-            signalDto.getPrice().toPlainString());
+            signal.getDirection(),
+            Instant.from(signal.getTimestamp()).toEpochMilli(),
+            signal.getPrice().toPlainString());
     }
 
-    private String toSizedOrderString(StrategyOrderDto strategyOrderDto) {
+    private String toSizedOrderString(Order order) {
         return String.format("%s,%d,%s,%d,%s,%s,%s",
-            strategyOrderDto.getInstrument(),
-            strategyOrderDto.getTimestamp().toInstant().toEpochMilli(),
-            strategyOrderDto.getDirection().name(),
-            strategyOrderDto.getQuantity(),
-            valueOrEmpty(strategyOrderDto.getPrice()),
-            valueOrEmpty(strategyOrderDto.getSignalStrength()),
-            valueOrEmpty(strategyOrderDto.getCapitalAllocated())
+            order.getInstrument(),
+            order.getTimestamp().toInstant().toEpochMilli(),
+            order.getDirection().name(),
+            order.getQuantity(),
+            valueOrEmpty(order.getPrice()),
+            valueOrEmpty(order.getSignalStrength()),
+            valueOrEmpty(order.getCapitalAllocated())
         );
     }
 

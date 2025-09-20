@@ -1,7 +1,6 @@
 package strategy.engine.schemaobject;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 import lombok.AllArgsConstructor;
@@ -14,7 +13,7 @@ import strategy.engine.constant.enums.TradeDirection;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TradeDto {
+public class Trade {
     private String instrument;
     private TradeDirection direction;
     private int quantity;
