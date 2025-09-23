@@ -125,7 +125,7 @@ public class BacktestServiceImpl implements BacktestService {
             fileIterators.put(instrument, fileIterator);
 
             BarSeries series = new BaseBarSeries(instrument);
-            series.setMaximumBarCount(100);
+            series.setMaximumBarCount(5000);
             barSeries.put(instrument, series);
 
             TradingRecord tradingRecord = new MultiLegPositionTradingRecord(instrument, TradeType.BUY);

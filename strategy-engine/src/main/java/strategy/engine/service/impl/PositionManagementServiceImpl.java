@@ -63,7 +63,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         BigDecimal currentHoldings = holdings.getQuantity();
         BigDecimal scale = BigDecimal.ONE; // EXIT assumed
         if (TradeAction.TRIM == signal.getAction()) {
-            scale = BigDecimal.valueOf(0.2);
+            scale = BigDecimal.valueOf(0.5);
         }
         BigDecimal quantity = currentHoldings.multiply(scale);
         quantity = getFinalQuantityBasedOnPolicy(quantity);
@@ -85,7 +85,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         BigDecimal baseCapital = portfolioService.getTotalValue().multiply(BigDecimal.valueOf(MAX_CAPITAL_ALLOCATION_PCT));
         BigDecimal finalCapitalAllocation = getFinalCapitalAllocation(signal, baseCapital);
         if (TradeAction.TRIM == signal.getAction()) {
-            finalCapitalAllocation = finalCapitalAllocation.multiply(BigDecimal.valueOf(0.2));
+            finalCapitalAllocation = finalCapitalAllocation.multiply(BigDecimal.valueOf(0.25));
         }
         // 7. Calculate quantity = capital allocation / entry price
         BigDecimal quantity = finalCapitalAllocation.divide(signal.getPrice(), 4, RoundingMode.HALF_UP);
