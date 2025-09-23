@@ -101,7 +101,7 @@ public class BacktestServiceImpl implements BacktestService {
         }
 
         for (String instrument: readyToTest) {
-            tradingRecordManagementService.writeToFile(tradingRecords.get(instrument));
+            tradingRecordManagementService.writeToFile(tradingRecords.get(instrument), instrument, exchange, from, to, interval);
         }
         TradingReport tradingReport = tradingReportGenerator.generate();
 

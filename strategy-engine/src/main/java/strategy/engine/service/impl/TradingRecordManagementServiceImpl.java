@@ -1,6 +1,5 @@
 package strategy.engine.service.impl;
 
-import feign.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,11 +28,15 @@ import static strategy.engine.util.StrategyEngineUtils.sanitize;
 public class TradingRecordManagementServiceImpl implements TradingRecordManagementService {
 
     @Override
-    public void writeToFile(TradingRecord tradingRecord) {
+    public void writeToFile(TradingRecord tradingRecord, String instrument, String exchange, LocalDateTime fromDate, LocalDateTime toDate, String interval) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-            String filename = String.format("%s_%s_%s.csv", tradingRecord.getName(),
-                formatter.format(tradingRecord.getStartTime()), formatter.format(tradingRecord.getEndTime()));
+            String filename = String.format("%s_%s_%s_%s_%s.csv",
+                instrument,
+                exchange,
+                interval,
+                formatter.format(fromDate),
+                formatter.format(toDate));
             Path dataDir = Paths.get("files", "output");
             Files.createDirectories(dataDir);
             Path dataFile = dataDir.resolve(filename);
