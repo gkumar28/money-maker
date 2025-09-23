@@ -93,7 +93,7 @@ public class ZerodhaApiController implements ZerodhaApi {
     private Duration getMaxEndTime(String interval) {
         return switch (interval) {
             case "minute" -> Duration.ofDays(60);
-            case "3minute", "5minute", "60minute" -> Duration.ofDays(100);
+            case "3minute", "5minute", "15minute", "60minute" -> Duration.ofDays(100);
             default -> Duration.ofDays(365);
         };
     }

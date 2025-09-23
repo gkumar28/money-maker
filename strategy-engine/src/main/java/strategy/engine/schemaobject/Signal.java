@@ -1,6 +1,7 @@
 package strategy.engine.schemaobject;
 
-import strategy.engine.constant.enums.TradeDirection;
+import strategy.engine.constant.enums.TradeAction;
+import strategy.engine.constant.enums.TradeType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,13 +14,13 @@ import java.time.ZonedDateTime;
 @AllArgsConstructor
 public class Signal {
 
-    public Signal(TradeDirection direction, ZonedDateTime timestamp) {
-        this.direction = direction;
+    public Signal(TradeType tradeType, ZonedDateTime timestamp) {
+        this.tradeType = tradeType;
         this.timestamp = timestamp;
     }
 
-    private TradeDirection direction;
-    private BigDecimal confidence;
+    private TradeType tradeType;
+    private TradeAction action;
     private ZonedDateTime timestamp;
     private BigDecimal price;
 

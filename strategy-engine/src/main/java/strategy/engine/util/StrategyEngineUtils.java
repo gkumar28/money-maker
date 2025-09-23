@@ -2,7 +2,7 @@ package strategy.engine.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.num.DecimalNum;
-import strategy.engine.constant.enums.TradeDirection;
+import strategy.engine.constant.enums.TradeType;
 import strategy.engine.schemaobject.Order;
 import strategy.engine.schemaobject.Trade;
 
@@ -11,6 +11,7 @@ import java.math.RoundingMode;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -26,105 +27,19 @@ public class StrategyEngineUtils {
         return BigDecimal.ZERO.max(BigDecimal.ONE.min(val.subtract(min).divide(max.subtract(min), 4, RoundingMode.HALF_UP)));
     }
 
-    public static BigDecimal roundToTwoDecimals(double value) {
-        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
-    }
-
-    public static Trade convertOrderToTrade(Order order, int atIndex) {
+    public static Trade convertOrderToTrade(Order order, int atIndex, ZonedDateTime timestamp) {
         Trade trade = new Trade();
         trade.setInstrument(order.getInstrument());
         trade.setQuantity(order.getQuantity());
         trade.setPrice(order.getPrice());
-        trade.setDirection(order.getDirection());
+        trade.setTradeType(order.getTradeType());
         trade.setIndex(atIndex);
-        trade.setTimestamp(ZonedDateTime.now(ZoneId.of("UTC")));
+        trade.setTimestamp(timestamp);
         return trade;
-    }
-
-    public static Trade mergeTrades(Trade... trades) {
-        if (trades == null || trades.length == 0) {
-            throw new IllegalArgumentException("Number of trades must be greater than 0");
-        }
-
-        // Find the first non-null trade to get instrument/direction
-        Trade firstNonNull = Arrays.stream(trades)
-            .filter(Objects::nonNull)
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("All trades are null"));
-
-        String instrument = firstNonNull.getInstrument();
-        TradeDirection direction = firstNonNull.getDirection();
-
-        int totalQuantity = 0;
-        BigDecimal totalWeightedPrice = BigDecimal.ZERO;
-        int lastIndex = 0;
-
-        for (Trade trade : trades) {
-            if (trade == null) continue;
-
-            if (!instrument.equals(trade.getInstrument())) {
-                throw new IllegalArgumentException("Cannot merge trades with different instruments");
-            }
-            if (direction != trade.getDirection()) {
-                throw new IllegalArgumentException("Cannot merge trades with different directions");
-            }
-
-            BigDecimal qtyBD = BigDecimal.valueOf(trade.getQuantity());
-            totalWeightedPrice = totalWeightedPrice.add(trade.getPrice().multiply(qtyBD));
-            totalQuantity += trade.getQuantity();
-            lastIndex = Math.max(lastIndex, trade.getIndex());
-        }
-
-        if (totalQuantity == 0) {
-            throw new IllegalArgumentException("Total quantity is zero. Cannot calculate average price.");
-        }
-
-        BigDecimal averagePrice = totalWeightedPrice
-            .divide(BigDecimal.valueOf(totalQuantity), 6, RoundingMode.HALF_UP);
-
-        Trade merged = new Trade();
-        merged.setInstrument(instrument);
-        merged.setDirection(direction);
-        merged.setQuantity(totalQuantity);
-        merged.setPrice(averagePrice);
-        merged.setIndex(lastIndex);
-
-        return merged;
     }
 
     public static ZonedDateTime now() {
         return ZonedDateTime.now(ZoneId.of("UTC"));
-    }
-
-    public static org.ta4j.core.Trade asTrade(Trade trade) {
-        if (trade.getDirection().name().equalsIgnoreCase(org.ta4j.core.Trade.TradeType.BUY.toString())) {
-            return org.ta4j.core.Trade.buyAt(trade.getIndex(), DecimalNum.valueOf(trade.getPrice()), DecimalNum.valueOf(trade.getQuantity()));
-        }
-        return org.ta4j.core.Trade.sellAt(trade.getIndex(), DecimalNum.valueOf(trade.getPrice()), DecimalNum.valueOf(trade.getQuantity()));
-    }
-
-    public static org.ta4j.core.Trade.TradeType asTradeType(TradeDirection direction) {
-        if (null == direction) {
-            return null;
-        }
-
-        if (org.ta4j.core.Trade.TradeType.BUY.toString().equalsIgnoreCase(direction.toString())) {
-            return org.ta4j.core.Trade.TradeType.BUY;
-        }
-
-        return org.ta4j.core.Trade.TradeType.SELL;
-    }
-
-    public static TradeDirection asTradeDirection(org.ta4j.core.Trade.TradeType tradeType) {
-        if (null == tradeType) {
-            return null;
-        }
-
-        if (org.ta4j.core.Trade.TradeType.BUY.toString().equalsIgnoreCase(tradeType.toString())) {
-            return TradeDirection.BUY;
-        }
-
-        return TradeDirection.SELL;
     }
 
     public static BigDecimal sanitize(BigDecimal value) {

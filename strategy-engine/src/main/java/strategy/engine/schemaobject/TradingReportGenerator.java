@@ -1,8 +1,7 @@
 package strategy.engine.schemaobject;
 
 import lombok.Data;
-import org.ta4j.core.Position;
-import strategy.engine.schemaobject.analysis.ExtendedTradingRecord;
+import strategy.engine.schemaobject.analysis.TradingRecord;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,13 +13,13 @@ import java.util.Map;
 @Data
 public class TradingReportGenerator {
     private final Portfolio portfolio;
-    private final Map<String, ExtendedTradingRecord> tradingRecords = new HashMap<>();
+    private final Map<String, TradingRecord> tradingRecords = new HashMap<>();
 
     public TradingReportGenerator(Portfolio portfolio) {
         this.portfolio = portfolio;
     }
 
-    public void setTradingRecord(String instrument, ExtendedTradingRecord tradingRecord) {
+    public void setTradingRecord(String instrument, TradingRecord tradingRecord) {
         tradingRecords.put(instrument, tradingRecord);
     }
 
@@ -30,7 +29,6 @@ public class TradingReportGenerator {
         List<TradingReport> subReports = new ArrayList<>();
 
         BigDecimal portfolioTotalInvestedCapital = BigDecimal.ZERO;
-        BigDecimal portfolioRealizedPnL = BigDecimal.ZERO;
         BigDecimal portfolioUnrealizedPnL = BigDecimal.ZERO;
         int portfolioProfitCount = 0;
         int portfolioBreakEvenCount = 0;
@@ -46,7 +44,6 @@ public class TradingReportGenerator {
             subReports.add(instrumentReport);
 
             portfolioTotalInvestedCapital = portfolioTotalInvestedCapital.add(instrumentReport.getTotalInvestedCapital());
-            portfolioRealizedPnL = portfolioRealizedPnL.add(instrumentReport.getRealizedPnL());
             portfolioUnrealizedPnL = portfolioUnrealizedPnL.add(instrumentReport.getUnrealizedPnL());
             portfolioProfitCount += instrumentReport.getProfitCount();
             portfolioBreakEvenCount += instrumentReport.getBreakEvenCount();
@@ -69,8 +66,6 @@ public class TradingReportGenerator {
         portfolioReport.setTotalInvestedCapital(portfolioTotalInvestedCapital);
         portfolioReport.setCurrentInvestedCapital(portfolio.getCurrentInvestedCapital());
         portfolioReport.setMaxInvestedCapital(portfolio.getMaxInvestedCapital());
-        portfolioReport.setRealizedPnL(portfolioRealizedPnL);
-        portfolioReport.setUnrealizedPnL(portfolioUnrealizedPnL);
 
         portfolioReport.setProfitCount(portfolioProfitCount);
         portfolioReport.setBreakEvenCount(portfolioBreakEvenCount);
@@ -80,6 +75,7 @@ public class TradingReportGenerator {
         portfolioReport.setProfitLossPercentage(portfolioProfitLossPercentage);
         portfolioReport.setProfit(portfolioProfit);
         portfolioReport.setLoss(portfolioLoss);
+        portfolioReport.setUnrealizedPnL(portfolioUnrealizedPnL);
 
         portfolioReport.setEntryTradeCount(portfolioEntryTradeCount);
         portfolioReport.setExitTradeCount(portfolioExitTradeCount);
@@ -90,83 +86,84 @@ public class TradingReportGenerator {
     }
 
     private TradingReport generate(String instrument) {
-        ExtendedTradingRecord record = tradingRecords.get(instrument);
+        TradingRecord tradingRecord = tradingRecords.get(instrument);
         Holding holding = portfolio.getHoldings().getOrDefault(instrument, new Holding());
 
         TradingReport instrumentReport = new TradingReport();
         instrumentReport.setInstrument(instrument);
 
-        BigDecimal unrealizedInvestedCapital = record.getUnRealizedCapitalInPartialPosition().bigDecimalValue();
-        BigDecimal realizedInvestedCapital = BigDecimal.ZERO;
-        BigDecimal realizedPnL = BigDecimal.ZERO;
-        BigDecimal unrealizedPnL = holding.getLastTradePrice().multiply(BigDecimal.valueOf(holding.getQuantity())).subtract(unrealizedInvestedCapital);
+        BigDecimal profitLoss = tradingRecord.getOpenPosition().getProfitLoss();
+        BigDecimal profit = BigDecimal.ZERO;
+        BigDecimal loss = BigDecimal.ZERO;
+        if (profitLoss.compareTo(BigDecimal.ZERO) > 0) {
+            profit = profitLoss.add(profitLoss);
+        } else {
+            loss = loss.add(profitLoss);
+        }
+        BigDecimal investedCapital = tradingRecord.getOpenPosition().getInvestedCapital();
+        BigDecimal unrealizedProfitLoss = holding.getLastTradePrice().multiply(holding.getQuantity()).subtract(investedCapital);
 
         int profitCount = 0;
         int breakEvenCount = 0;
         int lossCount = 0;
 
-        BigDecimal totalProfitLoss = BigDecimal.ZERO;
-        BigDecimal totalProfit = BigDecimal.ZERO;
-        BigDecimal totalLoss = BigDecimal.ZERO;
-
         // Iterate over all closed positions
-        for (Position position : record.getPositions()) {
-            BigDecimal entryCost = position.getEntry().getPricePerAsset().multipliedBy(position.getEntry().getAmount()).bigDecimalValue();
-            BigDecimal exitCost = position.getExit().getPricePerAsset().multipliedBy(position.getExit().getAmount()).bigDecimalValue();
+        for (Position position : tradingRecord.getClosedPositions()) {
+            BigDecimal entryGrossValue = BigDecimal.ZERO;
+            BigDecimal exitGrossValue = BigDecimal.ZERO;
+            BigDecimal entryCost = BigDecimal.ZERO;
+            BigDecimal exitCost = BigDecimal.ZERO;
 
-            BigDecimal positionRealizedPnL = exitCost.subtract(entryCost);
-            realizedPnL = realizedPnL.add(positionRealizedPnL);
-            totalProfitLoss = totalProfitLoss.add(positionRealizedPnL);
-            realizedInvestedCapital = realizedInvestedCapital.add(entryCost);
+            for (Trade entry: position.getEntries()) {
+                entryGrossValue = entryGrossValue.add(entry.getGrossValue());
+                entryCost = entryCost.add(entry.getCost());
+            }
+
+            for (Trade exit: position.getExits()) {
+                exitGrossValue = exitGrossValue.add(exit.getGrossValue());
+                exitCost = exitCost.add(exit.getCost());
+            }
+
+            BigDecimal positionPnL = exitGrossValue.subtract(entryGrossValue).subtract(entryCost).subtract(exitCost);
+            profitLoss = profitLoss.add(positionPnL);
+            investedCapital = investedCapital.add(entryCost).add(entryGrossValue);
 
             // Count profit/break-even/loss trades
-            int cmp = positionRealizedPnL.compareTo(BigDecimal.ZERO);
+            int cmp = positionPnL.compareTo(BigDecimal.ZERO);
             if (cmp > 0) {
                 profitCount++;
-                totalProfit = totalProfit.add(positionRealizedPnL);
+                profit = profit.add(positionPnL);
             } else if (cmp == 0) {
                 breakEvenCount++;
             } else {
                 lossCount++;
-                totalLoss = totalLoss.add(positionRealizedPnL);
+                loss = loss.add(positionPnL);
             }
         }
 
-        // add realized part of partial position if any
-        realizedInvestedCapital = realizedInvestedCapital.add(record.getRealizedCapitalFromPartialPosition().bigDecimalValue());
-        BigDecimal profitLossFromRealizedPartialPosition = record.getRealizedProfitLossFromPartialPosition().bigDecimalValue();
-        totalProfitLoss = totalProfitLoss.add(profitLossFromRealizedPartialPosition);
-        realizedPnL = realizedPnL.add(profitLossFromRealizedPartialPosition);
-        if (profitLossFromRealizedPartialPosition.compareTo(BigDecimal.ZERO) > 0) {
-            totalProfit = totalProfit.add(profitLossFromRealizedPartialPosition);
-        } else {
-            totalLoss = totalLoss.add(profitLossFromRealizedPartialPosition);
-        }
-
         // Calculate total profit/loss percentage (avoid div by zero)
-        BigDecimal totalProfitLossPercentage = BigDecimal.ZERO;
-        if (realizedInvestedCapital.compareTo(BigDecimal.ZERO) > 0) {
-            totalProfitLossPercentage = totalProfitLoss.divide(realizedInvestedCapital, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+        BigDecimal profitLossPercentage = BigDecimal.ZERO;
+        if (investedCapital.compareTo(BigDecimal.ZERO) > 0) {
+            profitLossPercentage = profitLoss.divide(investedCapital, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         }
 
         instrumentReport.setInstrument(instrument);
         instrumentReport.setCurrentInvestedCapital(holding.getCurrentInvestedCapital());
         instrumentReport.setMaxInvestedCapital(holding.getMaxInvestedCapital());
-        instrumentReport.setTotalInvestedCapital(realizedInvestedCapital.add(unrealizedInvestedCapital));
-        instrumentReport.setRealizedPnL(realizedPnL);
-        instrumentReport.setUnrealizedPnL(unrealizedPnL);
+        instrumentReport.setTotalInvestedCapital(investedCapital);
 
         instrumentReport.setProfitCount(profitCount);
         instrumentReport.setBreakEvenCount(breakEvenCount);
         instrumentReport.setLossCount(lossCount);
 
-        instrumentReport.setProfitLoss(totalProfitLoss);
-        instrumentReport.setProfitLossPercentage(totalProfitLossPercentage);
-        instrumentReport.setProfit(totalProfit);
-        instrumentReport.setLoss(totalLoss);
+        instrumentReport.setProfitLoss(profitLoss);
+        instrumentReport.setProfitLossPercentage(profitLossPercentage);
+        instrumentReport.setProfit(profit);
+        instrumentReport.setLoss(loss);
+        instrumentReport.setUnrealizedPnL(unrealizedProfitLoss);
 
-        instrumentReport.setEntryTradeCount(record.getEntryTradeCount());
-        instrumentReport.setExitTradeCount(record.getExitTradeCount());
+        instrumentReport.setEntryTradeCount(tradingRecord.getEntryTradeCount());
+        instrumentReport.setExitTradeCount(tradingRecord.getExitTradeCount());
 
         return instrumentReport;
     }

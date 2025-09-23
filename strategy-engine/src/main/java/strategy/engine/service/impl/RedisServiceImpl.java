@@ -15,6 +15,7 @@ import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.num.DecimalNum;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -97,20 +98,19 @@ public class RedisServiceImpl implements RedisService {
 
     private String toSignalString(Signal signal) {
         return String.format("%s,%d,%s",
-            signal.getDirection(),
+            signal.getTradeType(),
             Instant.from(signal.getTimestamp()).toEpochMilli(),
             signal.getPrice().toPlainString());
     }
 
     private String toSizedOrderString(Order order) {
-        return String.format("%s,%d,%s,%d,%s,%s,%s",
+        return String.format("%s,%d,%s,%s,%s,%s",
             order.getInstrument(),
             order.getTimestamp().toInstant().toEpochMilli(),
-            order.getDirection().name(),
-            order.getQuantity(),
+            order.getTradeType(),
+            order.getQuantity().setScale(2, RoundingMode.HALF_UP),
             valueOrEmpty(order.getPrice()),
-            valueOrEmpty(order.getSignalStrength()),
-            valueOrEmpty(order.getCapitalAllocated())
+            valueOrEmpty(order.getEstimatedCost())
         );
     }
 

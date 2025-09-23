@@ -8,6 +8,7 @@ import strategy.engine.schemaobject.Signal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import strategy.engine.schemaobject.Order;
+import strategy.engine.service.PortfolioService;
 import strategy.engine.service.SignalGenerationService;
 import strategy.engine.service.RedisService;
 import org.springframework.stereotype.Service;
@@ -24,15 +25,16 @@ public class SignalGenerationServiceImpl implements SignalGenerationService {
     private final TradeSignalCache tradeSignalCache;
     private final TradingStrategyRegistry strategyRegistry;
     private final PositionManagementService positionManagementService;
+    private final PortfolioService portfolioService;
 
     @Override
     public void onNewBarEvent(String instrument, Bar bar) {
         BarSeries barSeries = barDataCache.updateAndGetInstrument(instrument, bar);
-        Signal newSignal = strategyRegistry.get(instrument).evaluate(barSeries.getEndIndex());
+        Signal newSignal = strategyRegistry.get(instrument).evaluate(barSeries.getEndIndex(), portfolioService.getCurrentHoldings(instrument));
         Order order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
 
         tradeSignalCache.update(instrument, newSignal);
-        if (null == newSignal.getDirection()) {
+        if (null == newSignal.getTradeType()) {
             // if HOLD then no event
             return;
         }

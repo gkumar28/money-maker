@@ -19,15 +19,6 @@ import java.util.List;
 
 @RequestMapping("/test")
 public interface TestingApi {
-
-    @PostMapping("/simulate-signals")
-    ResponseEntity<List<Signal>> simulateSignals(@RequestParam @NotEmpty String instrument,
-                                                 @RequestParam @NotEmpty StrategyType strategy,
-                                                 @RequestBody @NotEmpty @Valid List<BarData> input);
-
-    @PostMapping("/simulate-orders")
-    ResponseEntity<List<Order>> simulateOrders(@RequestParam String instrument, @RequestBody @NotEmpty List<Signal> input);
-
     @PostMapping("/run-back-test")
     ResponseEntity<TradingReport> backtest(@RequestParam List<String> instruments,
                                            @RequestParam String exchange,

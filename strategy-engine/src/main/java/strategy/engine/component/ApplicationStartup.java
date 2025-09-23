@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import org.ta4j.core.BarSeries;
 import strategy.engine.cache.BarDataCache;
 import strategy.engine.constant.enums.StrategyType;
+import strategy.engine.constant.enums.TradeType;
+import strategy.engine.schemaobject.analysis.MultiLegPositionTradingRecord;
+import strategy.engine.schemaobject.analysis.TradingRecord;
 import strategy.engine.service.PortfolioService;
 import strategy.engine.strategy.TradingStrategy;
 
@@ -26,7 +29,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         for (String instrument: portfolioService.getInstruments()) {
             log.debug("instantiating bar series for instrument: {}", instrument);
             BarSeries instrumentData = barDataCache.get(instrument);
-            TradingStrategy strategy = tradingStrategyFactory.create(StrategyType.LONG_TREND, instrumentData);
+            TradingRecord tradingRecord = new MultiLegPositionTradingRecord(instrument, TradeType.BUY);
+            TradingStrategy strategy = tradingStrategyFactory.create(StrategyType.LONG_TREND, instrumentData, tradingRecord);
             tradingStrategyRegistry.register(instrument, strategy);
         }
     }

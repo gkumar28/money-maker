@@ -3,7 +3,7 @@ package strategy.engine.schemaobject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import strategy.engine.constant.enums.TradeDirection;
+import strategy.engine.constant.enums.TradeType;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
@@ -15,21 +15,19 @@ public class Order {
 
     private String instrument;
     private ZonedDateTime timestamp;
-    private TradeDirection direction;
-    private int quantity;
+    private TradeType tradeType;
+    private BigDecimal quantity;
     private BigDecimal price;
-    private BigDecimal signalStrength;
-    private BigDecimal capitalAllocated;
+    private BigDecimal estimatedCost;
 
     public static Order empty(String instrument, Signal signal) {
         Order order = new Order();
         order.setInstrument(instrument);
         order.setTimestamp(signal.getTimestamp());
-        order.setDirection(null);
-        order.setQuantity(0);
+        order.setTradeType(null);
+        order.setQuantity(BigDecimal.ZERO);
         order.setPrice(null);
-        order.setSignalStrength(signal.getConfidence());
-        order.setCapitalAllocated(BigDecimal.ZERO);
+        order.setEstimatedCost(BigDecimal.ZERO);
         return order;
     }
 

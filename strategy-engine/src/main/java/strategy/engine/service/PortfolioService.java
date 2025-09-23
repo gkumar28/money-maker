@@ -3,13 +3,14 @@ package strategy.engine.service;
 import strategy.engine.schemaobject.Holding;
 import strategy.engine.schemaobject.Portfolio;
 import strategy.engine.schemaobject.Trade;
-import strategy.engine.schemaobject.analysis.MultiPositionTradingRecord;
+import strategy.engine.schemaobject.analysis.MultiLegPositionTradingRecord;
+import strategy.engine.schemaobject.analysis.TradingRecord;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public interface PortfolioService {
-    void applyTrade(Trade trade, MultiPositionTradingRecord tradingRecord);
+    void applyTrade(Trade trade, TradingRecord tradingRecord);
 
     BigDecimal getTotalValue();
 

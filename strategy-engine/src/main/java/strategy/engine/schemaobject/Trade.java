@@ -7,7 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import strategy.engine.constant.enums.TradeDirection;
+import strategy.engine.constant.enums.TradeType;
+import strategy.engine.schemaobject.analysis.Cost;
 
 @Data
 @NoArgsConstructor
@@ -15,10 +16,19 @@ import strategy.engine.constant.enums.TradeDirection;
 @Builder
 public class Trade {
     private String instrument;
-    private TradeDirection direction;
-    private int quantity;
+    private TradeType tradeType;
+    private BigDecimal quantity;
     private BigDecimal price;
     private int index;
     private ZonedDateTime timestamp;
+    private Cost transactionCost;
+
+    public BigDecimal getGrossValue() {
+        return this.price.multiply(quantity);
+    }
+
+    public BigDecimal getCost() {
+        return transactionCost.calculate(price, quantity);
+    }
 }
 

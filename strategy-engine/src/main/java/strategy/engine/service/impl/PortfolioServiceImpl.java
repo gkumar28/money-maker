@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import strategy.engine.schemaobject.Holding;
 import strategy.engine.schemaobject.Portfolio;
 import strategy.engine.schemaobject.Trade;
-import strategy.engine.schemaobject.analysis.MultiPositionTradingRecord;
+import strategy.engine.schemaobject.analysis.TradingRecord;
 import strategy.engine.service.PortfolioService;
 
 import java.math.BigDecimal;
@@ -44,16 +44,16 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void applyTrade(Trade trade, MultiPositionTradingRecord tradingRecord) {
-        if (trade == null || trade.getQuantity() == 0) return;
+    public void applyTrade(Trade trade, TradingRecord tradingRecord) {
+        if (trade == null || trade.getQuantity().compareTo(BigDecimal.ZERO) == 0) return;
 
-        switch (trade.getDirection()) {
+        switch (trade.getTradeType()) {
             case BUY -> processBuy(trade, tradingRecord);
             case SELL -> processSell(trade, tradingRecord);
         }
 
         Holding holding = portfolio.getHoldings().get(trade.getInstrument());
-        log.debug("{}: invested capital: {} Avg Entry Price: {} Quantity: {}", holding.getInstrument(), sanitize(holding.getCurrentInvestedCapital()), sanitize(holding.getAvgEntryPrice()), holding.getQuantity());
+        log.debug("{}: invested capital: {} Avg Entry Price: {} Quantity: {}", holding.getInstrument(), sanitize(holding.getCurrentInvestedCapital()), sanitize(holding.getAvgEntryPrice()), sanitize(holding.getQuantity()));
         portfolio.setLastUpdated();
     }
 
@@ -75,14 +75,14 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     public void updateLastTradedPrice(String instrument, BigDecimal currentPrice) {
         Holding holding = getCurrentHoldings(instrument);
-        if (holding.getQuantity() == 0) {
+        if (holding.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
             return;
         }
 
         holding.setLastTradePrice(currentPrice);
     }
 
-    private void processBuy(Trade trade, MultiPositionTradingRecord tradingRecord) {
+    private void processBuy(Trade trade, TradingRecord tradingRecord) {
         String symbol = trade.getInstrument();
 
         Holding holding = portfolio.getHoldings().getOrDefault(symbol, new Holding(symbol));
@@ -94,10 +94,10 @@ public class PortfolioServiceImpl implements PortfolioService {
             throw new IllegalStateException("BUY trade cannot exceed available capital");
         }
 
-        int newQty = holding.getQuantity() + trade.getQuantity();
+        BigDecimal newQty = holding.getQuantity().add(trade.getQuantity());
 
         holding.setQuantity(newQty);
-        holding.setAvgEntryPrice(newInvestedCapital.divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP));
+        holding.setAvgEntryPrice(newInvestedCapital.divide(newQty, 2, RoundingMode.HALF_UP));
         // always update by difference of new capital and current capital -> original cost of trade
         updateInvestedCapital(holding, tradeOriginalCost);
 
@@ -105,30 +105,30 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolio.setAvailableCapital(portfolio.getAvailableCapital().subtract(tradeOriginalCost));
     }
 
-    private BigDecimal calculateCurrentInvestedCapital(MultiPositionTradingRecord tradingRecord) {
-        return tradingRecord.getUnRealizedCapitalInPartialPosition().bigDecimalValue();
+    private BigDecimal calculateCurrentInvestedCapital(TradingRecord tradingRecord) {
+        return tradingRecord.getOpenPosition().getInvestedCapital();
     }
 
-    private void processSell(Trade trade, MultiPositionTradingRecord tradingRecord) {
+    private void processSell(Trade trade, TradingRecord tradingRecord) {
         String symbol = trade.getInstrument();
         Holding holding = portfolio.getHoldings().getOrDefault(symbol, new Holding(symbol));
-        // trading record is called first to log trade so it always has latest information of open trades
+        // trading record is called first to log trade so it always has the latest information of open trades
         BigDecimal newInvestedCapital = calculateCurrentInvestedCapital(tradingRecord);
         BigDecimal tradeOriginalCost = newInvestedCapital.subtract(holding.getCurrentInvestedCapital()); // -ve of invested value
 
-        if (holding.getQuantity() < trade.getQuantity()) return;
+        if (holding.getQuantity().compareTo(trade.getQuantity()) < 0) return;
 
-        int sellQty = trade.getQuantity();
-        int newQty = holding.getQuantity() - sellQty;
-        BigDecimal value = trade.getPrice().multiply(BigDecimal.valueOf(sellQty));
+        BigDecimal sellQty = trade.getQuantity();
+        BigDecimal newQty = holding.getQuantity().subtract(sellQty);
+        BigDecimal value = trade.getPrice().multiply(sellQty);
         BigDecimal pnl = value.add(tradeOriginalCost);
 
         // Update holding
         holding.setQuantity(newQty);
-        if (0 == newQty) {
+        if (BigDecimal.ZERO.compareTo(newQty) == 0) {
             holding.setAvgEntryPrice(BigDecimal.ZERO);
         } else {
-            holding.setAvgEntryPrice(newInvestedCapital.divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP));
+            holding.setAvgEntryPrice(newInvestedCapital.divide(newQty, 2, RoundingMode.HALF_UP));
         }
         updateInvestedCapital(holding, tradeOriginalCost);
         portfolio.getHoldings().put(symbol, holding);

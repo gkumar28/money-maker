@@ -4,7 +4,8 @@ package strategy.engine.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import strategy.engine.constant.enums.TradeDirection;
+import strategy.engine.constant.enums.TradeAction;
+import strategy.engine.constant.enums.TradeType;
 import strategy.engine.schemaobject.Holding;
 import strategy.engine.schemaobject.Signal;
 import strategy.engine.schemaobject.Order;
@@ -25,18 +26,15 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     private static final double MAX_CAPITAL_ALLOCATION_PCT = 0.02;  // 2% risk per trade
     private static final int MIN_LOT_SIZE = 1;
 
-    // Entry position constants
+    // SL-TP multipliers
     private static final double SL_MULTIPLIER = 0.05;
-    private static final double TP_MULTIPLIER = 0.125;
-
-    // Exit position constants
-    private static final double MIN_CONFIDENCE_TO_SELL = 0.5;
-    private static final double MIN_CONFIDENCE_TO_CLOSE = 0.8;
-    private static final double MINIMUM_EXIT_POSITION_PCT = 0.2;
+    private static final double TP_MULTIPLIER = 0.10;
 
     // capital allocation constants
     private static final double CAPITAL_ALLOCATION_WEAK_TREND_MULTIPLIER = 0.5;
     private static final double CAPITAL_ALLOCATION_STRONG_TREND_MULTIPLIER = 1.2;
+
+    private static final boolean WHOLE_QUANTITY_ONLY = true;
 
     private final PortfolioService portfolioService;
     private final Map<String, BigDecimal> slPrices;
@@ -45,53 +43,39 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
     @Override
     public Order createOrderForLongPosition(String instrument, Signal signal) {
-        if (null == signal.getDirection()) {
+        if (null == signal.getTradeType()) {
             return Order.empty(instrument, signal);
         }
 
-        return switch (signal.getDirection()) {
-            case BUY -> calculateLongPositionEntrySize(instrument, signal);
-            case SELL -> calculateLongPositionExitSize(instrument, signal);
+        return switch (signal.getAction()) {
+            case ENTRY,EXPAND -> calculateLongPositionEntrySize(instrument, signal);
+            case TRIM,EXIT -> calculateLongPositionExitSize(instrument, signal);
         };
     }
 
     @Override
     public Order calculateLongPositionExitSize(String instrument, Signal signal) {
         Holding holdings = portfolioService.getCurrentHoldings(instrument);
-        if (null == holdings || holdings.getQuantity() == 0) {
+        if (null == holdings || BigDecimal.ZERO.compareTo(holdings.getQuantity()) == 0) {
             log.debug("{}: No Exit order as no current holdings", instrument);
             return Order.empty(instrument, signal);
         }
-        int currentHoldings = holdings.getQuantity();
-        BigDecimal confidence = signal.getConfidence(); // C
-        BigDecimal minExitPositionPct = BigDecimal.valueOf(MINIMUM_EXIT_POSITION_PCT); // A
-        BigDecimal minConfidenceToClose = BigDecimal.valueOf(MIN_CONFIDENCE_TO_CLOSE); // C100
-        BigDecimal minConfidenceToSell = BigDecimal.valueOf(MIN_CONFIDENCE_TO_SELL); // C0
-
-        // confidence span CS = C100 - C0
-        BigDecimal confidenceSpan = minConfidenceToClose.subtract(minConfidenceToSell);
-        // normalized confidence CN = min(1.0, (C - C0)/(C100 - C0))
-        BigDecimal normalizedConfidence = BigDecimal.ONE.min(
-            confidence.subtract(minConfidenceToSell)
-                .divide(confidenceSpan, 4, RoundingMode.HALF_UP)
-        );
-        // scale = A + min(1.0, (C - C0)/(C100 - C0)) * (1 - A)
-        BigDecimal scale = minExitPositionPct.add(normalizedConfidence.multiply(BigDecimal.ONE.subtract(minExitPositionPct)));
-
-        int quantity = (int) Math.floor(currentHoldings * scale.doubleValue());
-        if (quantity < MIN_LOT_SIZE) {
-            quantity = 0;  // Don't place tiny sell orders
+        BigDecimal currentHoldings = holdings.getQuantity();
+        BigDecimal scale = BigDecimal.ONE; // EXIT assumed
+        if (TradeAction.TRIM == signal.getAction()) {
+            scale = BigDecimal.valueOf(0.2);
         }
+        BigDecimal quantity = currentHoldings.multiply(scale);
+        quantity = getFinalQuantityBasedOnPolicy(quantity);
 
-        log.debug("{}: Exit order price: quantity: {} price: {}", instrument, quantity, sanitize(signal.getPrice()));
+        log.debug("{}: Exit order price: quantity: {} price: {}", instrument, sanitize(quantity), sanitize(signal.getPrice()));
         return new Order(
             instrument,
             signal.getTimestamp(),
-            TradeDirection.SELL,
+            TradeType.SELL,
             quantity,
             signal.getPrice(),
-            signal.getConfidence(),
-            signal.getPrice().multiply(BigDecimal.valueOf(quantity))  // capital released
+            getEstimatedCost(signal.getTradeType()) // capital released
         );
     }
 
@@ -100,21 +84,20 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         // Base capital allocation (2% of account)
         BigDecimal baseCapital = portfolioService.getTotalValue().multiply(BigDecimal.valueOf(MAX_CAPITAL_ALLOCATION_PCT));
         BigDecimal finalCapitalAllocation = getFinalCapitalAllocation(signal, baseCapital);
-
-        // 7. Calculate quantity = capital allocation / entry price
-        int quantity = finalCapitalAllocation.divide(signal.getPrice(), 4, RoundingMode.HALF_UP).intValue();
-        if (quantity < MIN_LOT_SIZE) {
-            quantity = 0; // Could choose to skip trade or round up to min lot size
+        if (TradeAction.TRIM == signal.getAction()) {
+            finalCapitalAllocation = finalCapitalAllocation.multiply(BigDecimal.valueOf(0.2));
         }
+        // 7. Calculate quantity = capital allocation / entry price
+        BigDecimal quantity = finalCapitalAllocation.divide(signal.getPrice(), 4, RoundingMode.HALF_UP);
+        quantity = getFinalQuantityBasedOnPolicy(quantity);
 
-        log.debug("{}: Entry order price: quantity: {} price: {}", instrument, quantity, sanitize(signal.getPrice()));
+        log.debug("{}: Entry order price: quantity: {} price: {}", instrument, sanitize(quantity), sanitize(signal.getPrice()));
         return new Order(
             instrument,
             signal.getTimestamp(),
-            TradeDirection.BUY,
+            TradeType.BUY,
             quantity,
             signal.getPrice(),
-            signal.getConfidence(),
             finalCapitalAllocation
         );
     }
@@ -124,7 +107,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         Holding currentHolding = portfolioService.getPortfolio().getHoldings().getOrDefault(instrument, new Holding(instrument));
         BigDecimal slPrice = slPrices.get(instrument);
         BigDecimal tpPrice = tpPrices.get(instrument);
-        if (0 == currentHolding.getQuantity() || slPrice == null || tpPrice == null) {
+        if (BigDecimal.ZERO.compareTo(currentHolding.getQuantity()) == 0 || slPrice == null || tpPrice == null) {
             return null;
         }
 
@@ -143,13 +126,13 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
         slPrices.remove(instrument);
         tpPrices.remove(instrument);
-        return new Order(instrument,
+        return new Order(
+            instrument,
             signal.getTimestamp(),
-            TradeDirection.SELL,
+            TradeType.SELL,
             currentHolding.getQuantity(),
             currentPrice,
-            BigDecimal.ONE,
-            null);
+            getEstimatedCost(signal.getTradeType()));
     }
 
     private BigDecimal getFinalCapitalAllocation(Signal signal, BigDecimal baseCapital) {
@@ -162,7 +145,12 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         }
 
         // Calculate final capital to allocate for this trade
-        return baseCapital.multiply(trendMultiplier).multiply(signal.getConfidence());
+        return baseCapital.multiply(trendMultiplier).add(getEstimatedCost(signal.getTradeType()));
+    }
+
+    private BigDecimal getEstimatedCost(TradeType tradeType) {
+        // to read policy here and get estimate
+        return BigDecimal.ZERO;
     }
 
     @Override
@@ -174,11 +162,11 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
     private boolean updateStopLoss(String instrument) {
         Holding holding = portfolioService.getCurrentHoldings(instrument);
-        if (holding.getQuantity() == 0) {
+        if (BigDecimal.ZERO.compareTo(holding.getQuantity()) == 0) {
             return false;
         }
 
-        BigDecimal avgEntryPrice = holding.getCurrentInvestedCapital().divide(BigDecimal.valueOf(holding.getQuantity()), RoundingMode.HALF_UP);
+        BigDecimal avgEntryPrice = holding.getCurrentInvestedCapital().divide(holding.getQuantity(), RoundingMode.HALF_UP);
 
         BigDecimal slDistance = avgEntryPrice.multiply(BigDecimal.valueOf(SL_MULTIPLIER));
         BigDecimal stopLoss = avgEntryPrice.subtract(slDistance);
@@ -191,16 +179,27 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
     private boolean updateTakeProfit(String instrument) {
         Holding holding = portfolioService.getCurrentHoldings(instrument);
-        if (holding.getQuantity() == 0) {
+        if (BigDecimal.ZERO.compareTo(holding.getQuantity()) == 0) {
             return false;
         }
 
-        BigDecimal avgEntryPrice = holding.getCurrentInvestedCapital().divide(BigDecimal.valueOf(holding.getQuantity()), RoundingMode.HALF_UP);
+        BigDecimal avgEntryPrice = holding.getCurrentInvestedCapital().divide(holding.getQuantity(), RoundingMode.HALF_UP);
 
         BigDecimal tpDistance = avgEntryPrice.multiply(BigDecimal.valueOf(TP_MULTIPLIER));
         BigDecimal takeProfit = avgEntryPrice.add(tpDistance);
         tpPrices.put(instrument, takeProfit);
         return true;
+    }
+
+    private BigDecimal getFinalQuantityBasedOnPolicy(BigDecimal quantity) {
+        if (quantity.compareTo(BigDecimal.valueOf(MIN_LOT_SIZE)) <= 0) {
+            return BigDecimal.ZERO; // Could choose to skip trade or round up to min lot size
+        }
+
+        if (WHOLE_QUANTITY_ONLY) {
+            return quantity.divideToIntegralValue(BigDecimal.ONE);
+        }
+        return quantity;
     }
 }
 

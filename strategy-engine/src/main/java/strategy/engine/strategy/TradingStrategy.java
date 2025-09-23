@@ -2,9 +2,9 @@ package strategy.engine.strategy;
 
 import lombok.Data;
 import org.ta4j.core.BarSeries;
-import org.ta4j.core.TradingRecord;
 import strategy.engine.schemaobject.Holding;
 import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.analysis.TradingRecord;
 
 @Data
 public abstract class TradingStrategy {

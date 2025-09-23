@@ -10,14 +10,18 @@ import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import strategy.engine.component.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
+import strategy.engine.constant.enums.TradeType;
 import strategy.engine.indicator.KallmanIndicator;
 import strategy.engine.schemaobject.Signal;
 import strategy.engine.schemaobject.Order;
 import strategy.engine.schemaobject.Trade;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.schemaobject.TradingReportGenerator;
-import strategy.engine.schemaobject.analysis.MultiPositionTradeOnNextOpenModel;
-import strategy.engine.schemaobject.analysis.MultiPositionTradingRecord;
+import strategy.engine.schemaobject.analysis.MultiLegPositionTradingRecord;
+import strategy.engine.schemaobject.analysis.TradeExecutionModel;
+import strategy.engine.schemaobject.analysis.TradeOnNextOpenModel;
+import strategy.engine.schemaobject.analysis.TradingRecord;
+import strategy.engine.schemaobject.analysis.ZeroCost;
 import strategy.engine.service.BacktestService;
 import strategy.engine.service.MarketDataService;
 import strategy.engine.service.PortfolioService;
@@ -53,18 +57,19 @@ public class BacktestServiceImpl implements BacktestService {
 
     @Override
     public TradingReport backtest(List<String> instruments, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
-        // 1. Load historical data for the instrument
-        portfolioService.resetPortfolio(BigDecimal.valueOf(1000000));
+
         LocalDateTime from = fromDate.atTime(LocalTime.of(0, 0, 0));
         LocalDateTime to = toDate.atTime(LocalTime.of(23, 59, 59));
         TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolioService.getPortfolio());
 
+        // setup backtest
+        portfolioService.resetPortfolio(BigDecimal.valueOf(1000000));
         List<String> readyToTest = new ArrayList<>();
         Map<String, Iterator<String>> fileIterators = new HashMap<>();
         Map<String, BarSeries> barSeries = new HashMap<>();
         Map<String, TradingStrategy> strategies = new HashMap<>();
-        Map<String, MultiPositionTradingRecord> tradingRecords = new HashMap<>();
-        MultiPositionTradeOnNextOpenModel tradeExecutionModel = new MultiPositionTradeOnNextOpenModel();
+        Map<String, TradingRecord> tradingRecords = new HashMap<>();
+        TradeExecutionModel tradeExecutionModel = new TradeOnNextOpenModel(new ZeroCost());
 
         for (String instrument: instruments) {
             Path dataFilePath = marketDataService.loadRawData(instrument, exchange, from, to, interval);
@@ -93,7 +98,12 @@ public class BacktestServiceImpl implements BacktestService {
             index++;
         }
 
-        return tradingReportGenerator.generate();
+        TradingReport tradingReport = tradingReportGenerator.generate();
+
+        // clear backtest
+        portfolioService.resetPortfolio(BigDecimal.ZERO);
+        log.debug("\n================================ END OF BACK TEST =================================\n");
+        return tradingReport;
     }
 
     private boolean initBacktestForInstrument(String instrument,
@@ -102,7 +112,7 @@ public class BacktestServiceImpl implements BacktestService {
                               Map<String, Iterator<String>> fileIterators,
                               Map<String, BarSeries> barSeries,
                               Map<String, TradingStrategy> strategies,
-                              Map<String, MultiPositionTradingRecord> tradingRecords) {
+                              Map<String, TradingRecord> tradingRecords) {
 
         try {
             Stream<String> lines = Files.lines(dataFilePath);
@@ -113,11 +123,13 @@ public class BacktestServiceImpl implements BacktestService {
             series.setMaximumBarCount(100);
             barSeries.put(instrument, series);
 
-            TradingStrategy strategy = tradingStrategyFactory.create(strategyType, series);
+            TradingRecord tradingRecord = new MultiLegPositionTradingRecord(instrument, TradeType.BUY);
+            tradingRecords.put(instrument, tradingRecord);
+
+            TradingStrategy strategy = tradingStrategyFactory.create(strategyType, series, tradingRecord);
             strategies.put(instrument, strategy);
 
-            MultiPositionTradingRecord tradingRecord = new MultiPositionTradingRecord(instrument, org.ta4j.core.Trade.TradeType.BUY);
-            tradingRecords.put(instrument, tradingRecord);
+
         } catch (Exception e) {
             log.error("Failed to initialize instrument {}", instrument, e);
             return false;
@@ -132,8 +144,8 @@ public class BacktestServiceImpl implements BacktestService {
                                           Iterator<String> fileIterator,
                                           BarSeries barSeries,
                                           TradingStrategy strategy,
-                                          MultiPositionTradeOnNextOpenModel tradeExecutionModel,
-                                          MultiPositionTradingRecord tradingRecord) {
+                                          TradeExecutionModel tradeExecutionModel,
+                                          TradingRecord tradingRecord) {
         if (!fileIterator.hasNext()) {
             return false;
         }
@@ -143,14 +155,14 @@ public class BacktestServiceImpl implements BacktestService {
 
         if (index > 0) {
             portfolioService.updateLastTradedPrice(instrument, bar.getClosePrice().bigDecimalValue());
-            Signal newSignal = strategy.evaluate(index - 1);
+            Signal newSignal = strategy.evaluate(index - 1, portfolioService.getCurrentHoldings(instrument));
             Order order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
             if (null == order) {
                 order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
             }
 
-            if (null != order.getDirection()) {
-                if (order.getQuantity() > 0) {
+            if (null != order.getTradeType()) {
+                if (order.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
                     Trade executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
 
                     portfolioService.applyTrade(executedTrade, tradingRecord);
