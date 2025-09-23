@@ -32,13 +32,13 @@ public class MarketDataServiceImpl implements MarketDataService {
     @Override
     public Path loadRawData(String instrument, String exchange, LocalDateTime fromDate, LocalDateTime toDate, String interval) {
         try {
-            String filename = String.format("%s_%s_%s_%s.csv", instrument, exchange, fromDate, toDate);
-            Path outputDir = Paths.get("files", "output");
-            Files.createDirectories(outputDir);
-            Path outputFile = outputDir.resolve(filename);
+            String filename = String.format("%s_%s_%s_%s_%s.csv", instrument, exchange, interval, fromDate, toDate);
+            Path dataDir = Paths.get("files", "input");
+            Files.createDirectories(dataDir);
+            Path dataFile = dataDir.resolve(filename);
 
-            if (Files.exists(outputFile)) {
-                return outputFile;
+            if (Files.exists(dataFile)) {
+                return dataFile;
             }
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
@@ -46,10 +46,10 @@ public class MarketDataServiceImpl implements MarketDataService {
             InputStream responseBody = brokerResponse.body().asInputStream();
 
             // Save stream directly to file
-            Files.copy(responseBody, outputFile, StandardCopyOption.REPLACE_EXISTING);
-            log.info("Raw data saved: {}", outputFile.toAbsolutePath());
+            Files.copy(responseBody, dataFile, StandardCopyOption.REPLACE_EXISTING);
+            log.info("Raw data saved: {}", dataFile.toAbsolutePath());
 
-            return outputFile.toAbsolutePath();
+            return dataFile.toAbsolutePath();
         } catch (IOException e) {
             log.error("Raw data load failed", e);
         }
