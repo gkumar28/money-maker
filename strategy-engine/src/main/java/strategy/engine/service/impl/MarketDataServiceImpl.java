@@ -32,7 +32,8 @@ public class MarketDataServiceImpl implements MarketDataService {
     @Override
     public Path loadRawData(String instrument, String exchange, LocalDateTime fromDate, LocalDateTime toDate, String interval) {
         try {
-            String filename = String.format("%s_%s_%s_%s_%s.csv", instrument, exchange, interval, fromDate, toDate);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+            String filename = String.format("%s_%s_%s_%s_%s.csv", instrument, exchange, interval, formatter.format(fromDate), formatter.format(toDate));
             Path dataDir = Paths.get("files", "input");
             Files.createDirectories(dataDir);
             Path dataFile = dataDir.resolve(filename);
@@ -41,7 +42,6 @@ public class MarketDataServiceImpl implements MarketDataService {
                 return dataFile;
             }
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
             Response brokerResponse = brokerIntegratorClient.getHistoricalDataCsv(instrument, exchange, formatter.format(fromDate), formatter.format(toDate), interval);
             InputStream responseBody = brokerResponse.body().asInputStream();
 
