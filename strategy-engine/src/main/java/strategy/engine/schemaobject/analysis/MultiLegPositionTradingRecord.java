@@ -5,6 +5,7 @@ import strategy.engine.constant.enums.TradeType;
 import strategy.engine.schemaobject.Position;
 import strategy.engine.schemaobject.Trade;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -16,8 +17,11 @@ public class MultiLegPositionTradingRecord implements TradingRecord {
     private final TradeType startingType;
     private Position openPosition;
 
-    private final Integer startIndex;
-    private final Integer endIndex;
+    private Integer startIndex;
+    private Integer endIndex;
+
+    private ZonedDateTime startTime;
+    private ZonedDateTime endTime;
 
     private final List<Position> closedPositions = new ArrayList<>();
     private final List<Trade> trades = new ArrayList<>();
@@ -37,6 +41,8 @@ public class MultiLegPositionTradingRecord implements TradingRecord {
         this.startingType = startingType;
         this.startIndex = null;
         this.endIndex = null;
+        this.startTime = null;
+        this.endTime = null;
         this.holdingCost = holdingCost;
         this.openPosition = new Position(name, startingType);
     }
@@ -75,6 +81,7 @@ public class MultiLegPositionTradingRecord implements TradingRecord {
 
         boolean isRecorded = openPosition.operate(trade);
         recordTrade(trade, trade.getTradeType() == startingType);
+        recordIndices(index, trade);
         if (openPosition.isClosed()) {
             closedPositions.add(openPosition);
             openPosition = new Position(name, startingType);
@@ -151,6 +158,12 @@ public class MultiLegPositionTradingRecord implements TradingRecord {
     @Override
     public int getTradeCount() { return trades.size(); }
 
+    @Override
+    public ZonedDateTime getStartTime() { return startTime; }
+
+    @Override
+    public ZonedDateTime getEndTime() { return endTime; }
+
     private void recordTrade(Trade trade, boolean isEntry) {
         Objects.requireNonNull(trade, "Trade should not be null");
 
@@ -167,5 +180,15 @@ public class MultiLegPositionTradingRecord implements TradingRecord {
         } else if (TradeType.SELL == trade.getTradeType()) {
             sellTrades.add(trade);
         }
+    }
+
+    private void recordIndices(int index, Trade trade) {
+        if (startIndex == null) {
+            startIndex = index;
+            startTime = trade.getTimestamp();
+        }
+
+        endIndex = index;
+        endTime = trade.getTimestamp();
     }
 }

@@ -26,6 +26,7 @@ import strategy.engine.service.BacktestService;
 import strategy.engine.service.MarketDataService;
 import strategy.engine.service.PortfolioService;
 import strategy.engine.service.PositionManagementService;
+import strategy.engine.service.TradingRecordManagementService;
 import strategy.engine.strategy.TradingStrategy;
 
 import java.math.BigDecimal;
@@ -54,6 +55,7 @@ public class BacktestServiceImpl implements BacktestService {
     private final PortfolioService portfolioService;
     private final PositionManagementService positionManagementService;
     private final TradingStrategyFactory tradingStrategyFactory;
+    private final TradingRecordManagementService tradingRecordManagementService;
 
     @Override
     public TradingReport backtest(List<String> instruments, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
@@ -98,6 +100,9 @@ public class BacktestServiceImpl implements BacktestService {
             index++;
         }
 
+        for (String instrument: readyToTest) {
+            tradingRecordManagementService.writeToFile(tradingRecords.get(instrument));
+        }
         TradingReport tradingReport = tradingReportGenerator.generate();
 
         // clear backtest

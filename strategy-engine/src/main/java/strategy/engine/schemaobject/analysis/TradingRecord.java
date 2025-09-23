@@ -47,4 +47,8 @@ public interface TradingRecord {
     Integer getStartIndex();
 
     Integer getEndIndex();
+
+    ZonedDateTime getStartTime();
+
+    ZonedDateTime getEndTime();
 }
