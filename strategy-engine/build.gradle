@@ -30,4 +30,6 @@ dependencies {
     // testing
     testImplementation platform('org.junit:junit-bom:5.11.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.uncommons.watchmaker:watchmaker-framework:0.7.1'
+
 }
