@@ -6,7 +6,6 @@ import org.ta4j.core.indicators.ATRIndicator;
 import org.ta4j.core.indicators.MACDIndicator;
 import org.ta4j.core.indicators.RecentSwingHighIndicator;
 import org.ta4j.core.indicators.adx.ADXIndicator;
-import org.ta4j.core.indicators.candles.BullishEngulfingIndicator;
 import org.ta4j.core.indicators.helpers.HighPriceIndicator;
 import org.ta4j.core.indicators.helpers.HighestValueIndicator;
 import org.ta4j.core.indicators.helpers.LowPriceIndicator;
@@ -80,7 +79,6 @@ public class LongTrendStrategy extends TradingStrategy {
         macdSignal = macd.getSignalLine(180);
         swingHigh = new RecentSwingHighIndicator(high, 600, 120, 120);
         resistance = new HighestValueIndicator(high, 4320);
-        BullishEngulfingIndicator bullishEngulfing = new BullishEngulfingIndicator(barSeries);
 
         Rule priceActionRule = new IsRisingRule(high, 60, 0.6)
             .and(new IsRisingRule(low, 60, 0.6))
