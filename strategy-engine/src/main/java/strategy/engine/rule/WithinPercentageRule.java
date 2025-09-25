@@ -4,6 +4,7 @@ import org.ta4j.core.Indicator;
 import org.ta4j.core.Rule;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.TradingRecord;
+import org.ta4j.core.indicators.helpers.ConstantIndicator;
 import org.ta4j.core.num.Num;
 
 public class WithinPercentageRule implements Rule {
@@ -13,10 +14,17 @@ public class WithinPercentageRule implements Rule {
     private final Num percentage;
     private final BarSeries series;
 
+    public WithinPercentageRule(Indicator<Num> referenceIndicator, Number threshold, double percentage) {
+        this.series = referenceIndicator.getBarSeries();
+        this.referenceIndicator = referenceIndicator;
+        this.targetIndicator = new ConstantIndicator<>(series, this.series.numOf(threshold));
+        this.percentage = series.numOf(percentage / 100.0); // convert to decimal
+    }
+
     public WithinPercentageRule(Indicator<Num> referenceIndicator, Indicator<Num> targetIndicator, double percentage) {
+        this.series = referenceIndicator.getBarSeries();
         this.referenceIndicator = referenceIndicator;
         this.targetIndicator = targetIndicator;
-        this.series = referenceIndicator.getBarSeries();
         this.percentage = series.numOf(percentage / 100.0); // convert to decimal
     }
 
