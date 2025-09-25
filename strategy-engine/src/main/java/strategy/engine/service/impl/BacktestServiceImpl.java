@@ -8,7 +8,7 @@ import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-import strategy.engine.component.TradingStrategyFactory;
+import strategy.engine.factory.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.constant.enums.TradeType;
 import strategy.engine.indicator.KallmanIndicator;

@@ -9,6 +9,7 @@ import org.ta4j.core.BarSeries;
 import strategy.engine.cache.BarDataCache;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.constant.enums.TradeType;
+import strategy.engine.factory.TradingStrategyFactory;
 import strategy.engine.schemaobject.analysis.MultiLegPositionTradingRecord;
 import strategy.engine.schemaobject.analysis.TradingRecord;
 import strategy.engine.service.PortfolioService;

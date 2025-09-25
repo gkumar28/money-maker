@@ -4,23 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.ta4j.core.BarSeries;
-import org.ta4j.core.BaseBar;
-import org.ta4j.core.BaseBarSeries;
-import org.ta4j.core.num.DecimalNum;
-import strategy.engine.component.TradingStrategyFactory;
+import strategy.engine.factory.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
-import strategy.engine.schemaobject.BarData;
-import strategy.engine.schemaobject.Signal;
-import strategy.engine.schemaobject.Order;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.service.BacktestService;
 import strategy.engine.service.PositionManagementService;
-import strategy.engine.strategy.TradingStrategy;
-import java.time.Duration;
+
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 
 @Controller

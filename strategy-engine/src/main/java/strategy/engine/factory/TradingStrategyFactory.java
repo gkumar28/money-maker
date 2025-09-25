@@ -1,4 +1,4 @@
-package strategy.engine.component;
+package strategy.engine.factory;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
