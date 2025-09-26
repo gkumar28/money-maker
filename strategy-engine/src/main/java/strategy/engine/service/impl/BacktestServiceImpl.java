@@ -159,9 +159,9 @@ public class BacktestServiceImpl implements BacktestService {
         barSeries.addBar(bar);
 
         if (index > 0) {
-            portfolioService.updateLastTradedPrice(instrument, bar.getClosePrice().bigDecimalValue());
+            portfolioService.updateLastTradedPrice(instrument, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             Signal newSignal = strategy.evaluate(index - 1, portfolioService.getCurrentHoldings(instrument));
-            Order order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, bar.getClosePrice().bigDecimalValue());
+            Order order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             if (null == order) {
                 order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
             }
