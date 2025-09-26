@@ -7,13 +7,13 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.BarSeries;
 import strategy.engine.cache.BarDataCache;
-import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.constant.enums.TradeType;
-import strategy.engine.factory.TradingStrategyFactory;
 import strategy.engine.schemaobject.analysis.MultiLegPositionTradingRecord;
 import strategy.engine.schemaobject.analysis.TradingRecord;
 import strategy.engine.service.PortfolioService;
-import strategy.engine.strategy.TradingStrategy;
+import strategy.engine.strategy.StrategyDefinition;
+import strategy.engine.strategy.StrategyDefinitionParser;
+import strategy.engine.strategy.StrategyInstance;
 
 @Component
 @RequiredArgsConstructor
@@ -22,17 +22,22 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     private final PortfolioService portfolioService;
     private final BarDataCache barDataCache;
-    private final TradingStrategyFactory tradingStrategyFactory;
-    private final TradingStrategyRegistry tradingStrategyRegistry;
+    private final StrategyDefinitionParser strategyDefinitionParser;
+    private final StrategyInstanceRegistry strategyInstanceRegistry;
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
+
+        StrategyDefinition strategyDefinition = strategyDefinitionParser.readAny();
+        if (null == strategyDefinition) {
+            return;
+        }
         for (String instrument: portfolioService.getInstruments()) {
-            log.debug("instantiating bar series for instrument: {}", instrument);
+            log.debug("instantiating strategy for instrument: {}", instrument);
             BarSeries instrumentData = barDataCache.get(instrument);
             TradingRecord tradingRecord = new MultiLegPositionTradingRecord(instrument, TradeType.BUY);
-            TradingStrategy strategy = tradingStrategyFactory.create(StrategyType.LONG_TREND, instrumentData, tradingRecord);
-            tradingStrategyRegistry.register(instrument, strategy);
+            StrategyInstance strategyInstance = new StrategyInstance(instrument, strategyDefinition, tradingRecord, instrumentData);
+            strategyInstanceRegistry.register(instrument, strategyInstance);
         }
     }
 }

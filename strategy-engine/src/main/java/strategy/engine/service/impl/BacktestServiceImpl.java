@@ -8,7 +8,6 @@ import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-import strategy.engine.factory.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.constant.enums.TradeType;
 import strategy.engine.indicator.KallmanIndicator;
@@ -27,8 +26,9 @@ import strategy.engine.service.MarketDataService;
 import strategy.engine.service.PortfolioService;
 import strategy.engine.service.PositionManagementService;
 import strategy.engine.service.TradingRecordManagementService;
-import strategy.engine.strategy.TradingStrategy;
-
+import strategy.engine.strategy.StrategyDefinition;
+import strategy.engine.strategy.StrategyDefinitionParser;
+import strategy.engine.strategy.StrategyInstance;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
@@ -54,7 +54,7 @@ public class BacktestServiceImpl implements BacktestService {
     private final MarketDataService marketDataService;
     private final PortfolioService portfolioService;
     private final PositionManagementService positionManagementService;
-    private final TradingStrategyFactory tradingStrategyFactory;
+    private final StrategyDefinitionParser strategyDefinitionParser;
     private final TradingRecordManagementService tradingRecordManagementService;
 
     @Override
@@ -68,17 +68,19 @@ public class BacktestServiceImpl implements BacktestService {
         portfolioService.resetPortfolio(BigDecimal.valueOf(1000000));
         List<String> readyToTest = new ArrayList<>();
         Map<String, Iterator<String>> fileIterators = new HashMap<>();
-        Map<String, BarSeries> barSeries = new HashMap<>();
-        Map<String, TradingStrategy> strategies = new HashMap<>();
-        Map<String, TradingRecord> tradingRecords = new HashMap<>();
+        Map<String, StrategyInstance> strategies = new HashMap<>();
         TradeExecutionModel tradeExecutionModel = new TradeOnNextOpenModel(new ZeroCost());
+        StrategyDefinition strategyDefinition = strategyDefinitionParser.readAny();
+        if (null != interval) {
+            strategyDefinition = strategyDefinition.withInterval(interval);
+        }
 
         for (String instrument: instruments) {
             Path dataFilePath = marketDataService.loadRawData(instrument, exchange, from, to, interval);
-            boolean instrumentBacktestLoaded = initBacktestForInstrument(instrument, strategyType, dataFilePath, fileIterators, barSeries, strategies, tradingRecords);
+            boolean instrumentBacktestLoaded = initBacktestForInstrument(instrument, dataFilePath, fileIterators, strategyDefinition, strategies);
             if (instrumentBacktestLoaded) {
                 readyToTest.add(instrument);
-                tradingReportGenerator.setTradingRecord(instrument, tradingRecords.get(instrument));
+                tradingReportGenerator.setTradingRecord(instrument, strategies.get(instrument).getTradingRecord());
             }
         }
 
@@ -89,19 +91,16 @@ public class BacktestServiceImpl implements BacktestService {
             for (String instrument: readyToTest) {
                 boolean currentHasNext = backtestPerInstrument(index,
                     instrument,
-                    interval,
                     fileIterators.get(instrument),
-                    barSeries.get(instrument),
                     strategies.get(instrument),
-                    tradeExecutionModel,
-                    tradingRecords.get(instrument));
+                    tradeExecutionModel);
                 hasNext = hasNext || currentHasNext;
             }
             index++;
         }
 
         for (String instrument: readyToTest) {
-            tradingRecordManagementService.writeToFile(tradingRecords.get(instrument), instrument, exchange, from, to, interval);
+            tradingRecordManagementService.writeToFile(strategies.get(instrument).getTradingRecord(), instrument, exchange, from, to, interval);
         }
         TradingReport tradingReport = tradingReportGenerator.generate();
 
@@ -112,12 +111,10 @@ public class BacktestServiceImpl implements BacktestService {
     }
 
     private boolean initBacktestForInstrument(String instrument,
-                              StrategyType strategyType,
                               Path dataFilePath,
                               Map<String, Iterator<String>> fileIterators,
-                              Map<String, BarSeries> barSeries,
-                              Map<String, TradingStrategy> strategies,
-                              Map<String, TradingRecord> tradingRecords) {
+                              StrategyDefinition strategyDefinition,
+                              Map<String, StrategyInstance> strategies) {
 
         try {
             Stream<String> lines = Files.lines(dataFilePath);
@@ -126,15 +123,10 @@ public class BacktestServiceImpl implements BacktestService {
 
             BarSeries series = new BaseBarSeries(instrument);
             series.setMaximumBarCount(5000);
-            barSeries.put(instrument, series);
 
             TradingRecord tradingRecord = new MultiLegPositionTradingRecord(instrument, TradeType.BUY);
-            tradingRecords.put(instrument, tradingRecord);
-
-            TradingStrategy strategy = tradingStrategyFactory.create(strategyType, series, tradingRecord);
-            strategies.put(instrument, strategy);
-
-
+            StrategyInstance strategyInstance = new StrategyInstance(instrument, strategyDefinition, tradingRecord, series);
+            strategies.put(instrument, strategyInstance);
         } catch (Exception e) {
             log.error("Failed to initialize instrument {}", instrument, e);
             return false;
@@ -145,22 +137,22 @@ public class BacktestServiceImpl implements BacktestService {
 
     private boolean backtestPerInstrument(int index,
                                           String instrument,
-                                          String interval,
                                           Iterator<String> fileIterator,
-                                          BarSeries barSeries,
-                                          TradingStrategy strategy,
-                                          TradeExecutionModel tradeExecutionModel,
-                                          TradingRecord tradingRecord) {
+                                          StrategyInstance strategyInstance,
+                                          TradeExecutionModel tradeExecutionModel){
         if (!fileIterator.hasNext()) {
             return false;
         }
 
-        Bar bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(interval));
-        barSeries.addBar(bar);
+        BarSeries barSeries = strategyInstance.getBarSeries();
+        TradingRecord tradingRecord = strategyInstance.getTradingRecord();
+
+        Bar bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(strategyInstance.getInterval()));
+        strategyInstance.getBarSeries().addBar(bar);
 
         if (index > 0) {
             portfolioService.updateLastTradedPrice(instrument, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
-            Signal newSignal = strategy.evaluate(index - 1, portfolioService.getCurrentHoldings(instrument));
+            Signal newSignal = strategyInstance.evaluate(index - 1);
             Order order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             if (null == order) {
                 order = positionManagementService.createOrderForLongPosition(instrument, newSignal);

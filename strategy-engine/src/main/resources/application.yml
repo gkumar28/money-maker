@@ -28,6 +28,10 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%logger{simple}] - %msg%n"
 
+strategy:
+  definitions:
+    home: 'classpath:strategies/'
+
 bar:
   time-frame: 60
 

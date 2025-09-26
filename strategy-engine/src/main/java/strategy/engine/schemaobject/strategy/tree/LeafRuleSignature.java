@@ -10,6 +10,7 @@ import strategy.engine.constant.enums.IndicatorType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +62,7 @@ public class LeafRuleSignature extends RuleSignature {
         TWO_INDICATORS(new LeafRuleSignature(
             2,
             List.of(Set.of(IndicatorType.values()), Set.of(IndicatorType.values())),
-            null)),
+            new HashSet<>())),
         ONE_INDICATOR_WITH_THRESHOLD(new LeafRuleSignature(
             1,
             List.of(Set.of(IndicatorType.values())),

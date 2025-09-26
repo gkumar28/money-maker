@@ -4,7 +4,6 @@ import strategy.engine.constant.enums.TradeType;
 import strategy.engine.schemaobject.Position;
 import strategy.engine.schemaobject.Trade;
 
-import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.List;
 

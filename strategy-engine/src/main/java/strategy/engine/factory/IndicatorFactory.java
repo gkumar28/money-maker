@@ -30,7 +30,7 @@ public class IndicatorFactory {
             case LOW_PRICE -> new LowPriceIndicator(series);
 
             case CONSTANT -> {
-                Num value = numProvider.numOf((Number) def.getParameters().get(IndicatorParam.CONSTANT));
+                Num value = numProvider.numOf((Number) def.getParameters().get(IndicatorParam.VALUE));
                 yield new ConstantIndicator<>(series, value);
             }
 

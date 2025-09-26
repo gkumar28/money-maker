@@ -2,22 +2,22 @@ package strategy.engine.component;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import strategy.engine.strategy.TradingStrategy;
+import strategy.engine.strategy.StrategyInstance;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @RequiredArgsConstructor
-public class TradingStrategyRegistry {
+public class StrategyInstanceRegistry {
 
-    private final Map<String, TradingStrategy> strategyMap = new ConcurrentHashMap<>();
+    private final Map<String, StrategyInstance> strategyMap = new ConcurrentHashMap<>();
 
-    public void register(String instrument, TradingStrategy strategy) {
+    public void register(String instrument, StrategyInstance strategy) {
         strategyMap.put(instrument, strategy);
     }
 
-    public TradingStrategy get(String instrument) {
+    public StrategyInstance get(String instrument) {
         return strategyMap.get(instrument);
     }
 
@@ -33,7 +33,7 @@ public class TradingStrategyRegistry {
         strategyMap.clear();
     }
 
-    public Map<String, TradingStrategy> getAll() {
+    public Map<String, StrategyInstance> getAll() {
         return strategyMap;
     }
 }

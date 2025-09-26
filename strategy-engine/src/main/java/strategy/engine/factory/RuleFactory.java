@@ -47,7 +47,9 @@ public class RuleFactory {
     }
 
     public Rule create(RuleDefinition ruleDefinition) {
-        if (ruleDefinition instanceof LogicalRuleDefinition logicalRule) {
+        if (null == ruleDefinition) {
+            return null;
+        } else if (ruleDefinition instanceof LogicalRuleDefinition logicalRule) {
             return createLogicalRule(logicalRule);
         } else if (ruleDefinition instanceof LeafRuleDefinition leafRule) {
             return createLeafRule(leafRule);
@@ -70,7 +72,7 @@ public class RuleFactory {
         };
     }
 
-    public Rule createLeafRule(LeafRuleDefinition leafRuleDefinition) {
+    private Rule createLeafRule(LeafRuleDefinition leafRuleDefinition) {
         LeafRuleType leafRuleType = (LeafRuleType) leafRuleDefinition.getRuleType();
         List<Indicator<Num>> indicators = leafRuleDefinition.getIndicatorDefinitions().stream()
             .map(indicatorFactory::create).toList();

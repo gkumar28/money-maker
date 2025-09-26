@@ -4,11 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import strategy.engine.factory.TradingStrategyFactory;
 import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.service.BacktestService;
-import strategy.engine.service.PositionManagementService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,8 +16,6 @@ import java.util.List;
 @Profile("dev")
 public class TestingApiController implements TestingApi {
 
-    private final TradingStrategyFactory tradingStrategyFactory;
-    private final PositionManagementService positionManagementService;
     private final BacktestService backtestService;
 
     @Override
