@@ -32,7 +32,7 @@ public class TA4JAdapter {
 
         BigDecimal exitCapital = BigDecimal.ZERO;
         int latestExitIndex = Integer.MIN_VALUE;
-        for (strategy.engine.schemaobject.Trade trade: position.getEntries()) {
+        for (strategy.engine.schemaobject.Trade trade: position.getExits()) {
             exitCapital = exitCapital.add(trade.getGrossValue()).subtract(trade.getCost());
             latestExitIndex = Math.max(latestExitIndex, trade.getIndex());
         }
@@ -46,7 +46,7 @@ public class TA4JAdapter {
         }
 
         Trade entry = asTrade(earliestEntryIndex, position.getStartingType(), avgEntryPrice, totalQuantity);
-        Trade exit = asTrade(earliestEntryIndex, position.getStartingType().complementType(), avgExitPrice, totalQuantity);
+        Trade exit = asTrade(latestExitIndex, position.getStartingType().complementType(), avgExitPrice, totalQuantity);
         return new Position(entry, exit);
     }
 
