@@ -13,13 +13,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Component
 @Slf4j
 public class StrategyDefinitionParser {
 
-    @Qualifier("yamlObjectMapper")
     private final ObjectMapper yamlObjectMapper;
 
     @Value("${strategy.definitions.home}")
@@ -65,5 +67,42 @@ public class StrategyDefinitionParser {
         }
 
         return null;
+    }
+
+    public void writeToFile(StrategyDefinition strategyDefinition) {
+        try {
+            String fileName = convertToSnakeCase(strategyDefinition.getName()) + ".yml";
+            File strategiesFolder = ResourceUtils.getFile(strategyDefinitionHome);
+            if (!strategiesFolder.exists()) {
+                strategiesFolder.mkdirs();
+            }
+
+            String yamlContent = yamlObjectMapper.writeValueAsString(strategyDefinition);
+            Path destinationPath = Paths.get(strategiesFolder.toURI()).resolve(fileName);
+            Files.write(destinationPath, yamlContent.getBytes());
+
+            log.debug("Successfully wrote strategy definition to file: {}", destinationPath.toString());
+
+        } catch (IOException e) {
+            log.error("Error writing strategy definition to file: {}", strategyDefinition.getName(), e);
+        }
+    }
+
+    public static String convertToSnakeCase(String input) {
+        List<String> segments = new ArrayList<>();
+        StringBuilder currentSegment = new StringBuilder();
+
+        for (int i = 0; i < input.length(); i++) {
+            char currentChar = input.charAt(i);
+            if (Character.isUpperCase(currentChar) && i > 0) {
+                segments.add(currentSegment.toString().toLowerCase());
+                currentSegment.setLength(0);
+            }
+
+            currentSegment.append(currentChar);
+        }
+
+        segments.add(currentSegment.toString().toLowerCase());
+        return String.join("_", segments);
     }
 }

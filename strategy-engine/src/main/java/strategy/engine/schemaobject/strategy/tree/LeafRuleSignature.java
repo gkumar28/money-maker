@@ -47,7 +47,7 @@ public class LeafRuleSignature extends RuleSignature {
 
         for (int i = 0; i < expectedIndicatorCount; i++) {
             Set<IndicatorType> allowedTypes = allowedIndicatorTypes.get(i);
-            IndicatorType actualType = actualIndicatorDefinitions.get(i).getType();
+            IndicatorType actualType = actualIndicatorDefinitions.get(i).getIndicatorType();
             if (!allowedTypes.contains(actualType)) {
                 return false;
             }
@@ -78,7 +78,9 @@ public class LeafRuleSignature extends RuleSignature {
         TWO_INDICATORS_WITH_PERCENTAGE(
             new LeafRuleSignature(
                 2,
-                List.of(Set.of(IndicatorType.values())),
+                List.of(
+                    Set.of(IndicatorType.values()),
+                    Set.of(IndicatorType.values())),
                 Set.of(RuleParam.PERCENTAGE)
             )
         ),

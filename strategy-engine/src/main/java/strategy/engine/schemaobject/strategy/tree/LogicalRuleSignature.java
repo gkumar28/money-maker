@@ -17,17 +17,15 @@ public class LogicalRuleSignature extends RuleSignature {
             return false;
         }
 
-        int actualChildCount = 0;
-        if (null != logicalRuleDefinition.getLeft()) actualChildCount++;
-        if (null != logicalRuleDefinition.getRight()) actualChildCount++;
-
+        int actualChildCount = null != logicalRuleDefinition.getChildren() ? logicalRuleDefinition.getChildren().size() : 0;
+        if (childCount == -1) return actualChildCount > 0;
         return actualChildCount != this.childCount;
     }
 
     @RequiredArgsConstructor
     @Getter
     public enum Types {
-        BINARY(new LogicalRuleSignature(2)),
+        BINARY(new LogicalRuleSignature(-1)),
         UNARY(new LogicalRuleSignature(1));
 
         private final RuleSignature signature;

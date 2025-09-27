@@ -7,20 +7,19 @@ import lombok.Getter;
 import lombok.ToString;
 import strategy.engine.constant.enums.LogicalRuleType;
 
+import java.util.List;
+
 @Getter
 @ToString
 @EqualsAndHashCode(callSuper = true)
 public class LogicalRuleDefinition extends RuleDefinition {
 
-    private final RuleDefinition left;
-    private final RuleDefinition right;
+    private final List<RuleDefinition> children;
 
     @JsonCreator
     public LogicalRuleDefinition(@JsonProperty("rule_type") LogicalRuleType ruleType,
-                                 @JsonProperty("left") RuleDefinition left,
-                                 @JsonProperty("right") RuleDefinition right) {
+                                 @JsonProperty("children") List<RuleDefinition> children) {
         super(ruleType);
-        this.left = left;
-        this.right = right;
+        this.children = children;
     }
 }

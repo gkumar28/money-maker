@@ -11,15 +11,15 @@ import java.util.Map;
 @Data
 public class IndicatorDefinition {
 
-    private final IndicatorType type;
+    private final IndicatorType indicatorType;
     private final Map<String, Object> parameters;
     private final List<IndicatorDefinition> inputs;
 
     @JsonCreator
-    public IndicatorDefinition(@JsonProperty("type") IndicatorType type,
+    public IndicatorDefinition(@JsonProperty("indicator_type") IndicatorType type,
                                @JsonProperty("parameters") Map<String, Object> parameters,
                                @JsonProperty("inputs") List<IndicatorDefinition> inputs) {
-        this.type = type;
+        this.indicatorType = type;
         this.parameters = parameters;
         this.inputs = inputs;
     }

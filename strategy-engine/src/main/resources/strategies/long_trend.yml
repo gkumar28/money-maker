@@ -4,25 +4,143 @@ delay: 50
 entry:
   _deftype: LOGICAL
   rule_type: AND
-  left:
-    _deftype: LEAF
-    rule_type: OVER_INDICATOR
-    indicator_definitions:
-      - type: CLOSE_PRICE
-      - type: CONSTANT
-        parameters:
-          value: 1000.0
-  right:
-    _deftype: LOGICAL
-    rule_type: NOT
-    left:
-      _deftype: LEAF
-      rule_type: IS_EQUAL
+  children:
+    - _deftype: LEAF
+      rule_type: OVER_INDICATOR
       parameters:
-        threshold: 30
+        threshold: 45
       indicator_definitions:
-        - type: RSI
+        - indicator_type: RSI
           parameters:
             bar_count: 14
           inputs:
-            - type: CLOSE_PRICE
+            - indicator_type: CLOSE_PRICE
+    - _deftype: LEAF
+      rule_type: OVER_INDICATOR
+      parameters:
+        threshold: 30
+      indicator_definitions:
+        - indicator_type: ADX
+          parameters:
+            bar_count: 14
+    - _deftype: LOGICAL
+      rule_type: OR
+      children:
+        - _deftype: LEAF
+          rule_type: CROSSED_UP_INDICATOR
+          indicator_definitions:
+          - indicator_type: MACD_SIGNAL
+            parameters:
+              signal_bar_count: 9
+            inputs:
+              - indicator_type: MACD
+                parameters:
+                  short_bar_count: 12
+                  long_bar_count: 26
+                inputs:
+                  - indicator_type: CLOSE_PRICE
+          - indicator_type: MACD
+            parameters:
+              short_bar_count: 12
+              long_bar_count: 26
+            inputs:
+                - indicator_type: CLOSE_PRICE
+        - _deftype: LEAF
+          rule_type: CROSSED_UP_INDICATOR
+          indicator_definitions:
+              - indicator_type: CLOSE_PRICE
+              - indicator_type: HIGHEST_VALUE
+                parameters:
+                  bar_count: 100
+                inputs:
+                  - indicator_type: HIGH_PRICE
+
+expand:
+  _deftype: LOGICAL
+  rule_type: AND
+  children:
+    - _deftype: LEAF
+      rule_type: OVER_INDICATOR
+      indicator_definitions:
+        - indicator_type: CLOSE_PRICE
+        - indicator_type: RECENT_SWING_HIGH
+          inputs:
+            - indicator_type: HIGH_PRICE
+          parameters:
+            preceding_lower_bars: 8
+            following_lower_bars: 2
+            allowed_equal_bars: 2
+    - _deftype: LEAF
+      rule_type: OVER_INDICATOR
+      parameters:
+        threshold: 50
+      indicator_definitions:
+        - indicator_type: RSI
+          parameters:
+            bar_count: 14
+          inputs:
+            - indicator_type: CLOSE_PRICE
+    - _deftype: LEAF
+      rule_type: OVER_INDICATOR
+      parameters:
+        threshold: 30
+      indicator_definitions:
+        - indicator_type: ADX
+          parameters:
+            bar_count: 14
+
+trim:
+  _deftype: LOGICAL
+  rule_type: OR
+  children:
+    - _deftype: LOGICAL
+      rule_type: NOT
+      children:
+        - _deftype: LEAF
+          rule_type: WITHIN_PERCENTAGE
+          parameters:
+            percentage: 2
+          indicator_definitions:
+            - indicator_type: CLOSE_PRICE
+            - indicator_type: RECENT_SWING_HIGH
+              inputs:
+                - indicator_type: HIGH_PRICE
+              parameters:
+                preceding_lower_bars: 8
+                following_lower_bars: 2
+                allowed_equal_bars: 2
+    - _deftype: LEAF
+      rule_type: AVERAGE_TRUE_RANGE_STOP_GAIN
+      parameters:
+        atr_bar_count: 14
+        coefficient: 2
+      indicator_definitions:
+        - indicator_type: CLOSE_PRICE
+
+exit:
+  _deftype: LOGICAL
+  rule_type: OR
+  children:
+    - _deftype: LEAF
+      rule_type: CROSSED_DOWN_INDICATOR
+      parameters:
+        threshold: 40
+      indicator_definitions:
+        - indicator_type: RSI
+          parameters:
+            bar_count: 14
+          inputs:
+            - indicator_type: CLOSE_PRICE
+    - _deftype: LEAF
+      rule_type: TRAILING_STOP_LOSS
+      parameters:
+        percentage: 2
+        bar_count: 100
+      indicator_definitions:
+        - indicator_type: HIGH_PRICE
+    - _deftype: LEAF
+      rule_type: STOP_GAIN
+      parameters:
+        percentage: 10
+      indicator_definitions:
+        - indicator_type: CLOSE_PRICE

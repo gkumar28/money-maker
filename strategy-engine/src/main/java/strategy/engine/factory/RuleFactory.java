@@ -34,6 +34,7 @@ import strategy.engine.schemaobject.strategy.tree.RuleDefinition;
 import strategy.engine.schemaobject.strategy.tree.RuleSignature;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class RuleFactory {
@@ -61,14 +62,25 @@ public class RuleFactory {
     private Rule createLogicalRule(LogicalRuleDefinition logicalRuleDefinition) {
         LogicalRuleType type = (LogicalRuleType) logicalRuleDefinition.getRuleType();
 
-        Rule leftRule = create(logicalRuleDefinition.getLeft());
-        Rule rightRule = create(logicalRuleDefinition.getRight());
+        List<Rule> children = logicalRuleDefinition.getChildren().stream().map(this::create).toList();
 
+        if (children.size() == 1) {
+            return switch(type) {
+                case NOT -> new NotRule(children.get(0));
+                default -> children.get(0);
+            };
+        }
+        return children.stream()
+            .skip(1)
+            .reduce(children.get(0), (rule1, rule2) -> combine(rule1, rule2, type));
+    }
+
+    private Rule combine(Rule rule1, Rule rule2, LogicalRuleType type) {
         return switch (type) {
-            case AND -> new AndRule(leftRule, rightRule);
-            case OR -> new OrRule(leftRule, rightRule);
-            case XOR -> new XorRule(leftRule, rightRule);
-            case NOT -> new NotRule(leftRule);
+            case AND -> new AndRule(rule1, rule2);
+            case OR -> new OrRule(rule1, rule2);
+            case XOR -> new XorRule(rule1, rule2);
+            case NOT -> new NotRule(rule1);
         };
     }
 
@@ -173,7 +185,7 @@ public class RuleFactory {
             if (signature.matches(ruleDefinition)) {
                 if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_BAR_COUNT_AND_THRESHOLD.getSignature())) {
                     int barCount = (int) ruleDefinition.getParameters().get(RuleParam.BAR_COUNT);
-                    double threshold = (double) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
+                    double threshold = ((Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD)).doubleValue();
                     return new IsRisingRule(indicators.get(0), barCount, threshold);
                 }
             }
@@ -186,7 +198,7 @@ public class RuleFactory {
             if (signature.matches(ruleDefinition)) {
                 if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_BAR_COUNT_AND_THRESHOLD.getSignature())) {
                     int barCount = (int) ruleDefinition.getParameters().get(RuleParam.BAR_COUNT);
-                    double threshold = (double) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
+                    double threshold = ((Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD)).doubleValue();
                     return new IsFallingRule(indicators.get(0), barCount, threshold);
                 }
             }
@@ -198,11 +210,11 @@ public class RuleFactory {
         for (RuleSignature signature : ruleDefinition.getRuleType().allowedSignatures()) {
             if (signature.matches(ruleDefinition)) {
                 if (signature.equals(LeafRuleSignature.Types.TWO_INDICATORS_WITH_PERCENTAGE.getSignature())) {
-                    double percentage = (double) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE);
+                    double percentage = ((Number) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE)).doubleValue();
                     return new WithinPercentageRule(indicators.get(0), indicators.get(1), percentage);
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD_AND_PERCENTAGE.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
-                    double percentage = (double) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE);
+                    double percentage = ((Number) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE)).doubleValue();
                     return new WithinPercentageRule(indicators.get(0), threshold, percentage);
                 }
             }
@@ -239,7 +251,7 @@ public class RuleFactory {
         for (RuleSignature signature : ruleDefinition.getRuleType().allowedSignatures()) {
             if (signature.matches(ruleDefinition)) {
                 if (signature.equals(LeafRuleSignature.Types.PRICE_WITH_PERCENTAGE_AND_BAR_COUNT.getSignature())) {
-                    double percentage = (double) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE);
+                    double percentage = ((Number) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE)).doubleValue();
                     int barCount = (int) ruleDefinition.getParameters().get(RuleParam.BAR_COUNT);
                     return new TrailingStopLossRule(indicators.get(0), barSeries.numOf(percentage), barCount);
                 }
@@ -251,7 +263,7 @@ public class RuleFactory {
     private Rule buildAverageTrueRangeStopGainRule(LeafRuleDefinition ruleDefinition, List<Indicator<Num>> indicators) {
         for (RuleSignature signature : ruleDefinition.getRuleType().allowedSignatures()) {
             if (signature.matches(ruleDefinition)) {
-                double coefficient = (double) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT);
+                double coefficient = ((Number) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT)).doubleValue();
                 int atrBarCount = (int) ruleDefinition.getParameters().get(RuleParam.ATR_BAR_COUNT);
                 return new AverageTrueRangeStopGainRule(barSeries, indicators.get(0), atrBarCount, coefficient);
             }
@@ -262,7 +274,7 @@ public class RuleFactory {
     private Rule buildAverageTrueRangeStopLossRule(LeafRuleDefinition ruleDefinition, List<Indicator<Num>> indicators) {
         for (RuleSignature signature : ruleDefinition.getRuleType().allowedSignatures()) {
             if (signature.matches(ruleDefinition)) {
-                double coefficient = (double) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT);
+                double coefficient = ((Number) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT)).doubleValue();
                 int atrBarCount = (int) ruleDefinition.getParameters().get(RuleParam.ATR_BAR_COUNT);
                 return new AverageTrueRangeStopLossRule(barSeries, indicators.get(0), atrBarCount, coefficient);
             }
@@ -273,7 +285,7 @@ public class RuleFactory {
     private Rule buildAverageTrueRangeTrailingStopLossRule(LeafRuleDefinition ruleDefinition, List<Indicator<Num>> indicators) {
         for (RuleSignature signature : ruleDefinition.getRuleType().allowedSignatures()) {
             if (signature.matches(ruleDefinition)) {
-                double coefficient = (double) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT);
+                double coefficient = ((Number) (double) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT)).doubleValue();
                 int atrBarCount = (int) ruleDefinition.getParameters().get(RuleParam.ATR_BAR_COUNT);
                 return new AverageTrueRangeTrailingStopLossRule(barSeries, indicators.get(0), atrBarCount, coefficient);
             }

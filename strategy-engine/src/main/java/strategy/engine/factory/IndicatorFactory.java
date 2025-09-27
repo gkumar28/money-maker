@@ -23,7 +23,7 @@ public class IndicatorFactory {
     }
 
     public Indicator<Num> create(IndicatorDefinition def) {
-        return switch (def.getType()) {
+        return switch (def.getIndicatorType()) {
 
             case CLOSE_PRICE -> new ClosePriceIndicator(series);
             case HIGH_PRICE -> new HighPriceIndicator(series);
@@ -82,13 +82,13 @@ public class IndicatorFactory {
 
             case RECENT_SWING_HIGH -> {
                 Indicator<Num> high = create(def.getInputs().get(0));
-                int barCount = (int) def.getParameters().get(IndicatorParam.ALLOWED_EQUAL_BARS);
+                int equal = (int) def.getParameters().get(IndicatorParam.ALLOWED_EQUAL_BARS);
                 int preceding = (int) def.getParameters().get(IndicatorParam.PRECEDING_LOWER_BARS);
                 int following = (int) def.getParameters().get(IndicatorParam.FOLLOWING_LOWER_BARS);
-                yield new RecentSwingHighIndicator(high, barCount, preceding, following);
+                yield new RecentSwingHighIndicator(high, preceding, following, equal);
             }
 
-            default -> throw new IllegalArgumentException("Unsupported indicator type: " + def.getType());
+            default -> throw new IllegalArgumentException("Unsupported indicator type: " + def.getIndicatorType());
         };
     }
 }
