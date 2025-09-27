@@ -8,7 +8,6 @@ import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-import strategy.engine.constant.enums.StrategyType;
 import strategy.engine.constant.enums.TradeType;
 import strategy.engine.indicator.KallmanIndicator;
 import strategy.engine.schemaobject.Signal;
@@ -58,7 +57,7 @@ public class BacktestServiceImpl implements BacktestService {
     private final TradingRecordManagementService tradingRecordManagementService;
 
     @Override
-    public TradingReport backtest(List<String> instruments, String exchange, String interval, StrategyType strategyType, LocalDate fromDate, LocalDate toDate) {
+    public TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
 
         LocalDateTime from = fromDate.atTime(LocalTime.of(0, 0, 0));
         LocalDateTime to = toDate.atTime(LocalTime.of(23, 59, 59));
