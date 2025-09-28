@@ -17,5 +17,5 @@ import strategy.engine.constant.enums.RuleType;
 })
 public abstract class RuleDefinition {
 
-    private final RuleType ruleType;
+    protected final RuleType ruleType;
 }

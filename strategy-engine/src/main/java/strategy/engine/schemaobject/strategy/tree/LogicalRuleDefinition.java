@@ -22,4 +22,12 @@ public class LogicalRuleDefinition extends RuleDefinition {
         super(ruleType);
         this.children = children;
     }
+
+    public LogicalRuleDefinition withChildren(List<RuleDefinition> otherChildren) {
+        if (this.children != null && this.children.equals(otherChildren)) {
+            return this;
+        }
+
+        return new LogicalRuleDefinition((LogicalRuleType) this.ruleType, otherChildren);
+    }
 }
