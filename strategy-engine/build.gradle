@@ -22,6 +22,9 @@ dependencies {
     implementation 'org.ta4j:ta4j-core:0.17'
     implementation("org.ejml:ejml-all:0.41")
 
+    // strategy backtesting and evolution
+    implementation 'org.uncommons.watchmaker:watchmaker-framework:0.7.1'
+
     // common
     implementation 'org.apache.commons:commons-lang3:3.18.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
@@ -32,6 +35,5 @@ dependencies {
     // testing
     testImplementation platform('org.junit:junit-bom:5.11.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.uncommons.watchmaker:watchmaker-framework:0.7.1'
 
 }
