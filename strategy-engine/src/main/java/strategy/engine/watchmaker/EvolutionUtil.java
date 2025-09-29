@@ -28,7 +28,9 @@ public class EvolutionUtil {
 
             for (RuleDefinition child: nonLeaf.getChildren()) {
                 RuleDefinition newChild = swap(child, selected, target);
-                newChildren.add(newChild);
+                if (null != newChild) {
+                    newChildren.add(newChild);
+                }
                 isChanged = isChanged || child != newChild;
             }
 
