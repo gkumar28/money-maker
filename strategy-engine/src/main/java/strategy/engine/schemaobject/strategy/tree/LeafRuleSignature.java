@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+import org.ta4j.core.Indicator;
 import strategy.engine.constant.RuleParam;
 import strategy.engine.constant.enums.IndicatorType;
 
@@ -61,11 +62,12 @@ public class LeafRuleSignature extends RuleSignature {
     public enum Types {
         TWO_INDICATORS(new LeafRuleSignature(
             2,
-            List.of(Set.of(IndicatorType.values()), Set.of(IndicatorType.values())),
+            List.of(Set.of(IndicatorType.CLOSE_PRICE, IndicatorType.HIGH_PRICE, IndicatorType.LOW_PRICE, IndicatorType.VOLUME, IndicatorType.EMA),
+                Set.of(IndicatorType.CONSTANT, IndicatorType.HIGHEST_VALUE, IndicatorType.RECENT_SWING_HIGH, IndicatorType.EMA, IndicatorType.SCALED)),
             new HashSet<>())),
         ONE_INDICATOR_WITH_THRESHOLD(new LeafRuleSignature(
             1,
-            List.of(Set.of(IndicatorType.values())),
+            List.of(Set.of(IndicatorType.ADX, IndicatorType.RSI)),
             Set.of(RuleParam.THRESHOLD)
         )),
         ONE_INDICATOR_WITH_BAR_COUNT_AND_THRESHOLD(
@@ -79,8 +81,8 @@ public class LeafRuleSignature extends RuleSignature {
             new LeafRuleSignature(
                 2,
                 List.of(
-                    Set.of(IndicatorType.values()),
-                    Set.of(IndicatorType.values())),
+                    Set.of(IndicatorType.CLOSE_PRICE, IndicatorType.HIGH_PRICE, IndicatorType.LOW_PRICE, IndicatorType.VOLUME, IndicatorType.EMA),
+                    Set.of(IndicatorType.CONSTANT, IndicatorType.HIGHEST_VALUE, IndicatorType.RECENT_SWING_HIGH, IndicatorType.EMA, IndicatorType.SCALED)),
                 Set.of(RuleParam.PERCENTAGE)
             )
         ),
@@ -88,7 +90,7 @@ public class LeafRuleSignature extends RuleSignature {
             new LeafRuleSignature(
                 1,
                 List.of(
-                    Set.of(IndicatorType.values())
+                    Set.of(IndicatorType.ADX, IndicatorType.RSI)
                 ),
                 Set.of(RuleParam.THRESHOLD, RuleParam.PERCENTAGE)
             )
