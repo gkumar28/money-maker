@@ -146,6 +146,8 @@ public class RuleFactory {
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
                     return new CrossedUpIndicatorRule(indicators.get(0), threshold);
+                } else if (signature.equals(LeafRuleSignature.Types.MACD_CROSSOVER.getSignature())) {
+                    return new CrossedUpIndicatorRule(indicators.get(0), indicators.get(1));
                 }
             }
         }
@@ -160,6 +162,8 @@ public class RuleFactory {
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
                     return new CrossedDownIndicatorRule(indicators.get(0), threshold);
+                } else if (signature.equals(LeafRuleSignature.Types.MACD_CROSSOVER.getSignature())) {
+                    return new CrossedUpIndicatorRule(indicators.get(0), indicators.get(1));
                 }
             }
         }

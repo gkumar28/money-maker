@@ -116,9 +116,13 @@ public class LeafRuleSignature extends RuleSignature {
                 1,
                 List.of(Set.of(IndicatorType.CLOSE_PRICE, IndicatorType.HIGH_PRICE)),
                 Set.of(RuleParam.ATR_BAR_COUNT, RuleParam.COEFFICIENT))
+        ),
+        MACD_CROSSOVER(
+            new LeafRuleSignature(
+                2,
+                List.of(Set.of(IndicatorType.MACD_SIGNAL), Set.of(IndicatorType.MACD)),
+                new HashSet<>())
         );
-
-
 
         private final RuleSignature signature;
     }

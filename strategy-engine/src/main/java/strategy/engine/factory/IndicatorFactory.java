@@ -28,7 +28,7 @@ public class IndicatorFactory {
             case CLOSE_PRICE -> new ClosePriceIndicator(series);
             case HIGH_PRICE -> new HighPriceIndicator(series);
             case LOW_PRICE -> new LowPriceIndicator(series);
-
+            case VOLUME -> new VolumeIndicator(series);
             case CONSTANT -> {
                 Num value = numProvider.numOf((Number) def.getParameters().get(IndicatorParam.VALUE));
                 yield new ConstantIndicator<>(series, value);

@@ -28,7 +28,8 @@ public enum LeafRuleType implements RuleType {
         public List<RuleSignature> allowedSignatures() {
             return List.of(
                 LeafRuleSignature.Types.TWO_INDICATORS.getSignature(),
-                LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature());
+                LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature(),
+                LeafRuleSignature.Types.MACD_CROSSOVER.getSignature());
         }
     },
     CROSSED_DOWN_INDICATOR {
@@ -36,7 +37,8 @@ public enum LeafRuleType implements RuleType {
         public List<RuleSignature> allowedSignatures() {
             return List.of(
                 LeafRuleSignature.Types.TWO_INDICATORS.getSignature(),
-                LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature());
+                LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature(),
+                LeafRuleSignature.Types.MACD_CROSSOVER.getSignature());
         }
     },
     IS_EQUAL {
