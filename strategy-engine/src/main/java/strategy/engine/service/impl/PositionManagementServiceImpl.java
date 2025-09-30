@@ -7,9 +7,10 @@ import org.springframework.stereotype.Service;
 import strategy.engine.constant.enums.TradeAction;
 import strategy.engine.constant.enums.TradeType;
 import strategy.engine.schemaobject.Holding;
+import strategy.engine.schemaobject.Portfolio;
 import strategy.engine.schemaobject.Signal;
 import strategy.engine.schemaobject.Order;
-import strategy.engine.service.PortfolioService;
+import strategy.engine.service.PortfolioManagementService;
 import strategy.engine.service.PositionManagementService;
 
 import java.math.BigDecimal;
@@ -36,26 +37,26 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
     private static final boolean WHOLE_QUANTITY_ONLY = true;
 
-    private final PortfolioService portfolioService;
+    private final PortfolioManagementService portfolioManagementService;
     private final Map<String, BigDecimal> slPrices;
     private final Map<String, BigDecimal> tpPrices;
 
 
     @Override
-    public Order createOrderForLongPosition(String instrument, Signal signal) {
+    public Order createOrderForLongPosition(Portfolio portfolio, String instrument, Signal signal) {
         if (null == signal.getTradeType()) {
             return Order.empty(instrument, signal);
         }
 
         return switch (signal.getAction()) {
-            case ENTRY,EXPAND -> calculateLongPositionEntrySize(instrument, signal);
-            case TRIM,EXIT -> calculateLongPositionExitSize(instrument, signal);
+            case ENTRY,EXPAND -> calculateLongPositionEntrySize(portfolio, instrument, signal);
+            case TRIM,EXIT -> calculateLongPositionExitSize(portfolio, instrument, signal);
         };
     }
 
     @Override
-    public Order calculateLongPositionExitSize(String instrument, Signal signal) {
-        Holding holdings = portfolioService.getCurrentHoldings(instrument);
+    public Order calculateLongPositionExitSize(Portfolio portfolio, String instrument, Signal signal) {
+        Holding holdings = portfolioManagementService.getCurrentHoldings(portfolio, instrument);
         if (null == holdings || BigDecimal.ZERO.compareTo(holdings.getQuantity()) == 0) {
             log.debug("{}: No Exit order as no current holdings", instrument);
             return Order.empty(instrument, signal);
@@ -80,9 +81,9 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     @Override
-    public Order calculateLongPositionEntrySize(String instrument, Signal signal) {
+    public Order calculateLongPositionEntrySize(Portfolio portfolio, String instrument, Signal signal) {
         // Base capital allocation (2% of account)
-        BigDecimal baseCapital = portfolioService.getTotalValue().multiply(BigDecimal.valueOf(MAX_CAPITAL_ALLOCATION_PCT));
+        BigDecimal baseCapital = portfolioManagementService.getTotalValue(portfolio).multiply(BigDecimal.valueOf(MAX_CAPITAL_ALLOCATION_PCT));
         BigDecimal finalCapitalAllocation = getFinalCapitalAllocation(signal, baseCapital);
         if (TradeAction.TRIM == signal.getAction()) {
             finalCapitalAllocation = finalCapitalAllocation.multiply(BigDecimal.valueOf(0.25));
@@ -103,8 +104,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     @Override
-    public Order triggerSLTPForPosition(String instrument, Signal signal, BigDecimal currentPrice) {
-        Holding currentHolding = portfolioService.getPortfolio().getHoldings().getOrDefault(instrument, new Holding(instrument));
+    public Order triggerSLTPForPosition(Portfolio portfolio, String instrument, Signal signal, BigDecimal currentPrice) {
+        Holding currentHolding = portfolio.getHoldings().getOrDefault(instrument, new Holding(instrument));
         BigDecimal slPrice = slPrices.get(instrument);
         BigDecimal tpPrice = tpPrices.get(instrument);
         if (BigDecimal.ZERO.compareTo(currentHolding.getQuantity()) == 0 || slPrice == null || tpPrice == null) {
@@ -154,14 +155,14 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     }
 
     @Override
-    public void updateSlTpForInstrument(String instrument) {
-        if (updateStopLoss(instrument) && updateTakeProfit(instrument)) {
+    public void updateSlTpForInstrument(Portfolio portfolio, String instrument) {
+        if (updateStopLoss(portfolio, instrument) && updateTakeProfit(portfolio, instrument)) {
             log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(slPrices.get(instrument)), sanitize(tpPrices.get(instrument)));
         }
     }
 
-    private boolean updateStopLoss(String instrument) {
-        Holding holding = portfolioService.getCurrentHoldings(instrument);
+    private boolean updateStopLoss(Portfolio portfolio, String instrument) {
+        Holding holding = portfolioManagementService.getCurrentHoldings(portfolio, instrument);
         if (BigDecimal.ZERO.compareTo(holding.getQuantity()) == 0) {
             return false;
         }
@@ -177,8 +178,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         return true;
     }
 
-    private boolean updateTakeProfit(String instrument) {
-        Holding holding = portfolioService.getCurrentHoldings(instrument);
+    private boolean updateTakeProfit(Portfolio portfolio, String instrument) {
+        Holding holding = portfolioManagementService.getCurrentHoldings(portfolio, instrument);
         if (BigDecimal.ZERO.compareTo(holding.getQuantity()) == 0) {
             return false;
         }

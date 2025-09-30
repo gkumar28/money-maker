@@ -10,6 +10,7 @@ import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import strategy.engine.constant.enums.TradeType;
 import strategy.engine.indicator.KallmanIndicator;
+import strategy.engine.schemaobject.Portfolio;
 import strategy.engine.schemaobject.Signal;
 import strategy.engine.schemaobject.Order;
 import strategy.engine.schemaobject.Trade;
@@ -22,7 +23,7 @@ import strategy.engine.schemaobject.analysis.TradingRecord;
 import strategy.engine.schemaobject.analysis.ZeroCost;
 import strategy.engine.service.BacktestService;
 import strategy.engine.service.MarketDataService;
-import strategy.engine.service.PortfolioService;
+import strategy.engine.service.PortfolioManagementService;
 import strategy.engine.service.PositionManagementService;
 import strategy.engine.service.TradingRecordManagementService;
 import strategy.engine.strategy.StrategyDefinition;
@@ -51,7 +52,7 @@ public class BacktestServiceImpl implements BacktestService {
 
 
     private final MarketDataService marketDataService;
-    private final PortfolioService portfolioService;
+    private final PortfolioManagementService portfolioManagementService;
     private final PositionManagementService positionManagementService;
     private final StrategyDefinitionParser strategyDefinitionParser;
     private final TradingRecordManagementService tradingRecordManagementService;
@@ -66,10 +67,11 @@ public class BacktestServiceImpl implements BacktestService {
     public TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate, boolean writeResultToFile, StrategyDefinition strategyDefinition) {
         LocalDateTime from = fromDate.atTime(LocalTime.of(0, 0, 0));
         LocalDateTime to = toDate.atTime(LocalTime.of(23, 59, 59));
-        TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolioService.getPortfolio());
 
         // setup backtest
-        portfolioService.resetPortfolio(BigDecimal.valueOf(1000000));
+        Portfolio portfolio = new Portfolio();
+        portfolioManagementService.resetPortfolio(portfolio, BigDecimal.valueOf(1000000));
+        TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolio);
         List<String> readyToTest = new ArrayList<>();
         Map<String, Iterator<String>> fileIterators = new HashMap<>();
         Map<String, StrategyInstance> strategies = new HashMap<>();
@@ -94,6 +96,7 @@ public class BacktestServiceImpl implements BacktestService {
             for (String instrument: readyToTest) {
                 boolean currentHasNext = backtestPerInstrument(index,
                     instrument,
+                    portfolio,
                     fileIterators.get(instrument),
                     strategies.get(instrument),
                     tradeExecutionModel);
@@ -110,7 +113,7 @@ public class BacktestServiceImpl implements BacktestService {
         TradingReport tradingReport = tradingReportGenerator.generate();
 
         // clear backtest
-        portfolioService.resetPortfolio(BigDecimal.ZERO);
+        portfolioManagementService.resetPortfolio(portfolio, BigDecimal.ZERO);
         log.debug("\n================================ END OF BACK TEST =================================\n");
         return tradingReport;
     }
@@ -142,6 +145,7 @@ public class BacktestServiceImpl implements BacktestService {
 
     private boolean backtestPerInstrument(int index,
                                           String instrument,
+                                          Portfolio portfolio,
                                           Iterator<String> fileIterator,
                                           StrategyInstance strategyInstance,
                                           TradeExecutionModel tradeExecutionModel){
@@ -156,19 +160,19 @@ public class BacktestServiceImpl implements BacktestService {
         strategyInstance.getBarSeries().addBar(bar);
 
         if (index > 0) {
-            portfolioService.updateLastTradedPrice(instrument, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
+            portfolioManagementService.updateLastTradedPrice(portfolio, instrument, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             Signal newSignal = strategyInstance.evaluate(index - 1);
-            Order order = positionManagementService.triggerSLTPForPosition(instrument, newSignal, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
+            Order order = positionManagementService.triggerSLTPForPosition(portfolio, instrument, newSignal, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             if (null == order) {
-                order = positionManagementService.createOrderForLongPosition(instrument, newSignal);
+                order = positionManagementService.createOrderForLongPosition(portfolio, instrument, newSignal);
             }
 
             if (null != order.getTradeType()) {
                 if (order.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
                     Trade executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
 
-                    portfolioService.applyTrade(executedTrade, tradingRecord);
-                    positionManagementService.updateSlTpForInstrument(instrument);
+                    portfolioManagementService.applyTrade(portfolio, executedTrade, tradingRecord);
+                    positionManagementService.updateSlTpForInstrument(portfolio, instrument);
                 } else {
                     log.debug("{}: index: {} No trade as quantity too low", instrument, index - 1);
                 }
