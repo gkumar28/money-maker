@@ -10,6 +10,7 @@ import strategy.engine.strategy.StrategyDefinition;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.Future;
 
 @RequestMapping("/test")
 public interface TestingApi {
@@ -29,9 +30,9 @@ public interface TestingApi {
 
 
     @PostMapping("/run-evolution-sim")
-    ResponseEntity<StrategyDefinition> evolve(@RequestParam List<String> instruments,
-                                              @RequestParam String exchange,
-                                              @RequestParam String interval,
-                                              @RequestParam LocalDate fromDate,
-                                              @RequestParam LocalDate toDate);
+    ResponseEntity<Future<StrategyDefinition>> evolve(@RequestParam List<String> instruments,
+                                                      @RequestParam String exchange,
+                                                      @RequestParam String interval,
+                                                      @RequestParam LocalDate fromDate,
+                                                      @RequestParam LocalDate toDate);
 }
