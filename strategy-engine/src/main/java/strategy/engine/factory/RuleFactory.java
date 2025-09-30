@@ -289,7 +289,7 @@ public class RuleFactory {
     private Rule buildAverageTrueRangeTrailingStopLossRule(LeafRuleDefinition ruleDefinition, List<Indicator<Num>> indicators) {
         for (RuleSignature signature : ruleDefinition.getRuleType().allowedSignatures()) {
             if (signature.matches(ruleDefinition)) {
-                double coefficient = ((Number) (double) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT)).doubleValue();
+                double coefficient = ((Number) ruleDefinition.getParameters().get(RuleParam.COEFFICIENT)).doubleValue();
                 int atrBarCount = (int) ruleDefinition.getParameters().get(RuleParam.ATR_BAR_COUNT);
                 return new AverageTrueRangeTrailingStopLossRule(barSeries, indicators.get(0), atrBarCount, coefficient);
             }

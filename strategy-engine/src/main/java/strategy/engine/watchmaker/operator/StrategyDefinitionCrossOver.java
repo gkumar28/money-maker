@@ -12,11 +12,11 @@ import java.util.UUID;
 
 public class StrategyDefinitionCrossOver extends AbstractCrossover<StrategyDefinition> {
 
-    protected StrategyDefinitionCrossOver(int crossoverPoints) {
+    public StrategyDefinitionCrossOver(int crossoverPoints) {
         super(crossoverPoints);
     }
 
-    protected StrategyDefinitionCrossOver(int crossoverPoints, Probability crossoverProbability) {
+    public StrategyDefinitionCrossOver(int crossoverPoints, Probability crossoverProbability) {
         super(crossoverPoints, crossoverProbability);
     }
 

@@ -53,7 +53,7 @@ public class RuleDefinitionGenerator {
         List<RuleSignature> signatures = ruleType.allowedSignatures();
         RuleSignature signature = signatures.get(rng.nextInt(signatures.size()));
         if (ruleType instanceof LogicalRuleType logicalRuleType) {
-            return generate(logicalRuleType, (LogicalRuleSignature) signatures, rng);
+            return generate(logicalRuleType, (LogicalRuleSignature) signature, rng);
         }
         return generate((LeafRuleType) ruleType, (LeafRuleSignature) signature, rng);
     }
@@ -105,7 +105,7 @@ public class RuleDefinitionGenerator {
         // for unbounded types - CLOSE_PRICE, HIGH_PRICE, LOW_PRICE, RECENT_SWING_HIGH
         Number[] possibleValues = new Number[2000];
         for (int i = 1;i <= 2000; i++) {
-            possibleValues[i] = i;
+            possibleValues[i-1] = i;
         }
         return possibleValues;
     }

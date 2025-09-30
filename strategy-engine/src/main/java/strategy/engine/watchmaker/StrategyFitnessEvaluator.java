@@ -7,6 +7,7 @@ import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.service.BacktestService;
 import strategy.engine.strategy.StrategyDefinition;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -15,15 +16,21 @@ import java.util.List;
 public class StrategyFitnessEvaluator implements FitnessEvaluator<StrategyDefinition> {
 
     private final BacktestService backtestService;
+    private final List<String> instruments;
+    private final String exchange;
+    private final String interval;
+    private final LocalDate fromDate;
+    private final LocalDate toDate;
 
     @Override
     public double getFitness(StrategyDefinition candidate, List<? extends StrategyDefinition> population) {
         TradingReport report = backtestService.backtest(
-            List.of("RELIANCE"),
-            "NSE",
-            "minute",
-            LocalDate.of(2024, 1, 1),
-            LocalDate.of(2024, 9, 30),
+            instruments,
+            exchange,
+            interval,
+            fromDate,
+            toDate,
+            false,
             candidate);
         return report.getProfitLossPercentage().doubleValue();
     }

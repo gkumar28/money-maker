@@ -1,7 +1,3 @@
-logging:
-  level:
-    strategy.engine: DEBUG
-
 management:
   endpoints:
     web:

@@ -59,11 +59,11 @@ public class BacktestServiceImpl implements BacktestService {
     @Override
     public TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
         StrategyDefinition strategyDefinition = strategyDefinitionParser.readAny();
-        return backtest(instruments, exchange, interval, fromDate, toDate, strategyDefinition);
+        return backtest(instruments, exchange, interval, fromDate, toDate, true, strategyDefinition);
     }
 
     @Override
-    public TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate, StrategyDefinition strategyDefinition) {
+    public TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate, boolean writeResultToFile, StrategyDefinition strategyDefinition) {
         LocalDateTime from = fromDate.atTime(LocalTime.of(0, 0, 0));
         LocalDateTime to = toDate.atTime(LocalTime.of(23, 59, 59));
         TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolioService.getPortfolio());
@@ -102,8 +102,10 @@ public class BacktestServiceImpl implements BacktestService {
             index++;
         }
 
-        for (String instrument: readyToTest) {
-            tradingRecordManagementService.writeToFile(strategies.get(instrument).getTradingRecord(), instrument, exchange, from, to, interval);
+        if (writeResultToFile) {
+            for (String instrument : readyToTest) {
+                tradingRecordManagementService.writeToFile(strategies.get(instrument).getTradingRecord(), instrument, exchange, from, to, interval);
+            }
         }
         TradingReport tradingReport = tradingReportGenerator.generate();
 

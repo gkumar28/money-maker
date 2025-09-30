@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.service.BacktestService;
+import strategy.engine.strategy.StrategyDefinition;
+import strategy.engine.watchmaker.StrategyDefinitionEvolution;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,5 +28,10 @@ public class TestingApiController implements TestingApi {
     @Override
     public ResponseEntity<Object> getKallmanPrediction(String instrument, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
         return ResponseEntity.ok(backtestService.getIndicatorValues(instrument, exchange, interval, fromDate, toDate));
+    }
+
+    @Override
+    public ResponseEntity<StrategyDefinition> evolve(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
+        return ResponseEntity.ok(new StrategyDefinitionEvolution(backtestService, instruments, exchange, interval, fromDate, toDate).evolve());
     }
 }

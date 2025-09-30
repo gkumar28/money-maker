@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import strategy.engine.schemaobject.TradingReport;
+import strategy.engine.strategy.StrategyDefinition;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,4 +26,12 @@ public interface TestingApi {
                                                 @RequestParam String interval,
                                                 @RequestParam LocalDate fromDate,
                                                 @RequestParam LocalDate toDate);
+
+
+    @PostMapping("/run-evolution-sim")
+    ResponseEntity<StrategyDefinition> evolve(@RequestParam List<String> instruments,
+                                              @RequestParam String exchange,
+                                              @RequestParam String interval,
+                                              @RequestParam LocalDate fromDate,
+                                              @RequestParam LocalDate toDate);
 }

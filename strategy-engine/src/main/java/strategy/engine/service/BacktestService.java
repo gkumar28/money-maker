@@ -10,7 +10,7 @@ import java.util.Map;
 public interface BacktestService {
     TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate);
 
-    TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate, StrategyDefinition strategyDefinition);
+    TradingReport backtest(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate, boolean writeResultToFile, StrategyDefinition strategyDefinition);
 
     List<Map<String, Object>> getIndicatorValues(String instrument, String exchange, String interval, LocalDate fromDate, LocalDate toDate);
 }
