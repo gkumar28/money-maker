@@ -21,6 +21,10 @@ public class Portfolio {
     private Map<String, Holding> holdings = new HashMap<>();
     private ZonedDateTime lastUpdated;
 
+    // helpers
+    private Map<String, BigDecimal> slPrices = new HashMap<>();
+    private Map<String, BigDecimal> tpPrices = new HashMap<>();
+
     public void setLastUpdated() {
         this.lastUpdated = ZonedDateTime.now(ZoneId.of("UTC"));
     }

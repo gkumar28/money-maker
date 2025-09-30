@@ -38,8 +38,6 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     private static final boolean WHOLE_QUANTITY_ONLY = true;
 
     private final PortfolioManagementService portfolioManagementService;
-    private final Map<String, BigDecimal> slPrices;
-    private final Map<String, BigDecimal> tpPrices;
 
 
     @Override
@@ -106,8 +104,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     @Override
     public Order triggerSLTPForPosition(Portfolio portfolio, String instrument, Signal signal, BigDecimal currentPrice) {
         Holding currentHolding = portfolio.getHoldings().getOrDefault(instrument, new Holding(instrument));
-        BigDecimal slPrice = slPrices.get(instrument);
-        BigDecimal tpPrice = tpPrices.get(instrument);
+        BigDecimal slPrice = portfolio.getSlPrices().get(instrument);
+        BigDecimal tpPrice = portfolio.getTpPrices().get(instrument);
         if (BigDecimal.ZERO.compareTo(currentHolding.getQuantity()) == 0 || slPrice == null || tpPrice == null) {
             return null;
         }
@@ -125,8 +123,8 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         }
 
 
-        slPrices.remove(instrument);
-        tpPrices.remove(instrument);
+        portfolio.getSlPrices().remove(instrument);
+        portfolio.getTpPrices().remove(instrument);
         return new Order(
             instrument,
             signal.getTimestamp(),
@@ -157,7 +155,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
     @Override
     public void updateSlTpForInstrument(Portfolio portfolio, String instrument) {
         if (updateStopLoss(portfolio, instrument) && updateTakeProfit(portfolio, instrument)) {
-            log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(slPrices.get(instrument)), sanitize(tpPrices.get(instrument)));
+            log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(portfolio.getSlPrices().get(instrument)), sanitize(portfolio.getTpPrices().get(instrument)));
         }
     }
 
@@ -174,7 +172,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
         if (stopLoss.compareTo(BigDecimal.ZERO) < 0) {
             stopLoss = BigDecimal.ZERO;
         }
-        slPrices.put(instrument, stopLoss);
+        portfolio.getSlPrices().put(instrument, stopLoss);
         return true;
     }
 
@@ -188,7 +186,7 @@ public class PositionManagementServiceImpl implements PositionManagementService 
 
         BigDecimal tpDistance = avgEntryPrice.multiply(BigDecimal.valueOf(TP_MULTIPLIER));
         BigDecimal takeProfit = avgEntryPrice.add(tpDistance);
-        tpPrices.put(instrument, takeProfit);
+        portfolio.getTpPrices().put(instrument, takeProfit);
         return true;
     }
 

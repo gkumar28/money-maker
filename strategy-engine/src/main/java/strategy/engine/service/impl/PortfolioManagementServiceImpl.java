@@ -10,6 +10,7 @@ import strategy.engine.service.PortfolioManagementService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashMap;
 import java.util.List;
 
 import static strategy.engine.util.StrategyEngineUtils.sanitize;
@@ -28,6 +29,8 @@ public class PortfolioManagementServiceImpl implements PortfolioManagementServic
     public void init(Portfolio portfolio, BigDecimal initialCapital, BigDecimal availableCapital) {
         portfolio.setInitialCapital(initialCapital);
         portfolio.setAvailableCapital(availableCapital);
+        portfolio.getTpPrices().clear();
+        portfolio.getSlPrices().clear();
         portfolio.setLastUpdated();
     }
 
@@ -39,6 +42,8 @@ public class PortfolioManagementServiceImpl implements PortfolioManagementServic
         portfolio.setInitialCapital(newCapital);
         portfolio.setCurrentInvestedCapital(BigDecimal.ZERO);
         portfolio.setMaxInvestedCapital(BigDecimal.ZERO);
+        portfolio.getTpPrices().clear();
+        portfolio.getSlPrices().clear();
         portfolio.setLastUpdated();
     }
 
