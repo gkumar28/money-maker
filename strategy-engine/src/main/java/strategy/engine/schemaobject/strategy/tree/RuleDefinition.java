@@ -3,6 +3,7 @@ package strategy.engine.schemaobject.strategy.tree;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import strategy.engine.constant.enums.RuleType;
 
 @Data
@@ -15,6 +16,7 @@ import strategy.engine.constant.enums.RuleType;
     @JsonSubTypes.Type(value = LogicalRuleDefinition.class, name = "LOGICAL"),
     @JsonSubTypes.Type(value = LeafRuleDefinition.class, name = "LEAF")
 })
+@EqualsAndHashCode
 public abstract class RuleDefinition {
 
     protected final RuleType ruleType;

@@ -1,6 +1,7 @@
 package strategy.engine.watchmaker;
 
 import lombok.extern.slf4j.Slf4j;
+import org.uncommons.watchmaker.framework.CachingFitnessEvaluator;
 import org.uncommons.watchmaker.framework.CandidateFactory;
 import org.uncommons.watchmaker.framework.EvaluatedCandidate;
 import org.uncommons.watchmaker.framework.EvolutionEngine;
@@ -43,7 +44,8 @@ public class StrategyDefinitionEvolution {
                         new LogicalToLeafRuleMutation(ruleDefinitionGenerator),
                         new LogicalToLogicalRuleMutation(ruleDefinitionGenerator)),
                 new double[]{0.25, 0.25, 0.25, 0.25})));
-        fitnessEvaluator = new StrategyFitnessEvaluator(backtestService, instruments, exchange, interval, fromDate, toDate);
+        FitnessEvaluator<StrategyDefinition> strategyFitnessEvaluator = new StrategyFitnessEvaluator(backtestService, instruments, exchange, interval, fromDate, toDate);
+        fitnessEvaluator = new CachingFitnessEvaluator<>(strategyFitnessEvaluator);
         plusSelection = true;
     }
 
@@ -62,7 +64,7 @@ public class StrategyDefinitionEvolution {
             10,
             0,
             new GenerationCount(10),
-            new TargetFitness(50.0, true));
+            new TargetFitness(150.0, true));
 
         return result.get(0).getCandidate();
     }

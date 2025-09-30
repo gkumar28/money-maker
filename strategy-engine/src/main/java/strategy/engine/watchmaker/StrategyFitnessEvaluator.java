@@ -32,7 +32,7 @@ public class StrategyFitnessEvaluator implements FitnessEvaluator<StrategyDefini
             toDate,
             false,
             candidate);
-        return report.getProfitLossPercentage().doubleValue();
+        return 100.0 + report.getProfitLossPercentage().doubleValue();
     }
 
     @Override
