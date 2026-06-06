@@ -4,31 +4,29 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-import org.ta4j.core.Bar;
-import org.ta4j.core.BarSeries;
-import org.ta4j.core.BaseBarSeries;
+import org.ta4j.core.*;
+import org.ta4j.core.backtest.TradeExecutionModel;
+import org.ta4j.core.backtest.TradeOnNextOpenModel;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-import strategy.engine.constant.enums.TradeType;
+import org.ta4j.core.num.DecimalNumFactory;
+import strategy.engine.component.Registry;
 import strategy.engine.indicator.KallmanIndicator;
 import strategy.engine.schemaobject.Portfolio;
-import strategy.engine.schemaobject.Signal;
+import strategy.engine.schemaobject.barseries.LookAheadBarSeries;
+import strategy.engine.schemaobject.signal.Signal;
 import strategy.engine.schemaobject.Order;
-import strategy.engine.schemaobject.Trade;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.schemaobject.TradingReportGenerator;
-import strategy.engine.schemaobject.analysis.MultiLegPositionTradingRecord;
-import strategy.engine.schemaobject.analysis.TradeExecutionModel;
-import strategy.engine.schemaobject.analysis.TradeOnNextOpenModel;
-import strategy.engine.schemaobject.analysis.TradingRecord;
-import strategy.engine.schemaobject.analysis.ZeroCost;
+import strategy.engine.schemaobject.barseries.LookAheadBarSeriesBuilder;
 import strategy.engine.service.BacktestService;
 import strategy.engine.service.MarketDataService;
 import strategy.engine.service.PortfolioManagementService;
-import strategy.engine.service.PositionManagementService;
+import strategy.engine.service.RiskManagementService;
 import strategy.engine.service.TradingRecordManagementService;
+import strategy.engine.strategy.SignalStrategy;
 import strategy.engine.strategy.StrategyDefinition;
 import strategy.engine.strategy.StrategyDefinitionParser;
-import strategy.engine.strategy.StrategyInstance;
+import strategy.engine.strategy.DiscreteSignalStrategy;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
@@ -53,7 +51,7 @@ public class BacktestServiceImpl implements BacktestService {
 
     private final MarketDataService marketDataService;
     private final PortfolioManagementService portfolioManagementService;
-    private final PositionManagementService positionManagementService;
+    private final RiskManagementService riskManagementService;
     private final StrategyDefinitionParser strategyDefinitionParser;
     private final TradingRecordManagementService tradingRecordManagementService;
 
@@ -73,19 +71,20 @@ public class BacktestServiceImpl implements BacktestService {
         portfolioManagementService.resetPortfolio(portfolio, BigDecimal.valueOf(1000000));
         TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolio);
         List<String> readyToTest = new ArrayList<>();
-        Map<String, Iterator<String>> fileIterators = new HashMap<>();
-        Map<String, StrategyInstance> strategies = new HashMap<>();
-        TradeExecutionModel tradeExecutionModel = new TradeOnNextOpenModel(new ZeroCost());
+        Registry<TradingRecord> tradingRecordRegistry = new Registry<>();
+        Registry<BarSeries> barSeriesRegistry = new Registry<>();
+        TradeExecutionModel executionModel = new TradeOnNextOpenModel();
         if (null != interval) {
             strategyDefinition = strategyDefinition.withInterval(interval);
         }
 
         for (String instrument: instruments) {
             Path dataFilePath = marketDataService.loadRawData(instrument, exchange, from, to, interval);
-            boolean instrumentBacktestLoaded = initBacktestForInstrument(instrument, dataFilePath, fileIterators, strategyDefinition, strategies);
+            BarSeries barSeries = getBacktestBarSeries(instrument, dataFilePath);
+            boolean instrumentBacktestLoaded = initBacktestForInstrument(instrument, dataFilePath, strategyDefinition);
             if (instrumentBacktestLoaded) {
                 readyToTest.add(instrument);
-                tradingReportGenerator.setTradingRecord(instrument, strategies.get(instrument).getTradingRecord());
+                tradingReportGenerator.setTradingRecord(instrument, tradingRecordRegistry.get(instrument));
             }
         }
 
@@ -98,8 +97,8 @@ public class BacktestServiceImpl implements BacktestService {
                     instrument,
                     portfolio,
                     fileIterators.get(instrument),
-                    strategies.get(instrument),
-                    tradeExecutionModel);
+                    strategyRegistry.get(instrument),
+                        executionModel);
                 hasNext = hasNext || currentHasNext;
             }
             index++;
@@ -118,61 +117,64 @@ public class BacktestServiceImpl implements BacktestService {
         return tradingReport;
     }
 
-    private boolean initBacktestForInstrument(String instrument,
-                              Path dataFilePath,
-                              Map<String, Iterator<String>> fileIterators,
-                              StrategyDefinition strategyDefinition,
-                              Map<String, StrategyInstance> strategies) {
+    private BarSeries getBacktestBarSeries(String instrument, Path dataFilePath) {
 
         try {
             Stream<String> lines = Files.lines(dataFilePath);
             Iterator<String> fileIterator = lines.skip(1).iterator();
-            fileIterators.put(instrument, fileIterator);
 
-            BarSeries series = new BaseBarSeries(instrument);
-            series.setMaximumBarCount(5000);
+            return new LookAheadBarSeriesBuilder()
+                    .withName(instrument)
+                    .withNumFactory(DecimalNumFactory.getInstance())
+                    .withMaxBarCount(2000)
+                    .withSeriesBeginIndex(0)
+                    .withDataProvider(new LookAheadBarSeries.BarDataProvider() {
 
-            TradingRecord tradingRecord = new MultiLegPositionTradingRecord(instrument, TradeType.BUY);
-            StrategyInstance strategyInstance = new StrategyInstance(instrument, strategyDefinition, tradingRecord, series);
-            strategies.put(instrument, strategyInstance);
+                        Path path = dataFilePath;
+
+                        @Override
+                        public List<Bar> fetchBars(int startIndex, int count) {
+                            return List.of();
+                        }
+                    })
+                    .build();
         } catch (Exception e) {
             log.error("Failed to initialize instrument {}", instrument, e);
-            return false;
         }
 
-        return true;
+        return new BaseBarSeriesBuilder().build();
     }
 
     private boolean backtestPerInstrument(int index,
                                           String instrument,
                                           Portfolio portfolio,
                                           Iterator<String> fileIterator,
-                                          StrategyInstance strategyInstance,
+                                          DiscreteSignalStrategy DiscreteSignalStrategy,
                                           TradeExecutionModel tradeExecutionModel){
         if (!fileIterator.hasNext()) {
             return false;
         }
 
-        BarSeries barSeries = strategyInstance.getBarSeries();
-        TradingRecord tradingRecord = strategyInstance.getTradingRecord();
+        BarSeries barSeries = DiscreteSignalStrategy.getBarSeries();
+        TradingRecord tradingRecord = DiscreteSignalStrategy.getTradingRecord();
 
-        Bar bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(strategyInstance.getInterval()));
-        strategyInstance.getBarSeries().addBar(bar);
+        Bar bar = marketDataService.historicalCsvStringToBar(fileIterator.next(), getDuration(DiscreteSignalStrategy.getInterval()), DecimalNumFactory.getInstance());
+        DiscreteSignalStrategy.getBarSeries().addBar(bar);
 
         if (index > 0) {
             portfolioManagementService.updateLastTradedPrice(portfolio, instrument, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
-            Signal newSignal = strategyInstance.evaluate(index - 1);
-            Order order = positionManagementService.triggerSLTPForPosition(portfolio, instrument, newSignal, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
+            Signal newSignal = DiscreteSignalStrategy.evaluate(index - 1);
+            Order order = riskManagementService.triggerSLTP(portfolio, instrument, newSignal, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             if (null == order) {
-                order = positionManagementService.createOrderForLongPosition(portfolio, instrument, newSignal);
+                order = riskManagementService.createOrder(portfolio, instrument, newSignal);
             }
 
             if (null != order.getTradeType()) {
                 if (order.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
                     Trade executedTrade = tradeExecutionModel.execute(index - 1, tradingRecord, barSeries, order);
 
-                    portfolioManagementService.applyTrade(portfolio, executedTrade, tradingRecord);
-                    positionManagementService.updateSlTpForInstrument(portfolio, instrument);
+                    portfolioManagementService.applyTrade(portfolio, executedTrade);
+                    riskManagementService.updateSLTP(portfolio, instrument);
                 } else {
                     log.debug("{}: index: {} No trade as quantity too low", instrument, index - 1);
                 }
@@ -200,8 +202,12 @@ public class BacktestServiceImpl implements BacktestService {
 
         try(Stream<String> lines = Files.lines(dataFilePath)) {
 
-            BarSeries barSeries = new BaseBarSeries(instrument + ":backtest");
-            barSeries.setMaximumBarCount(100);
+            BarSeries barSeries = new BaseBarSeriesBuilder()
+                    .withName(instrument + ":backtest")
+                    .withMaxBarCount(100)
+                    .withNumFactory(DecimalNumFactory.getInstance())
+                    .build();
+
             ClosePriceIndicator close = new ClosePriceIndicator(barSeries);
             KallmanIndicator kallman = new KallmanIndicator(close, 0.1, 5);
 

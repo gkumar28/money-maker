@@ -2,11 +2,13 @@ package strategy.engine.factory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.indicators.adx.ADXIndicator;
+import org.ta4j.core.indicators.averages.EMAIndicator;
 import org.ta4j.core.indicators.helpers.*;
 import org.ta4j.core.indicators.*;
 import org.ta4j.core.Indicator;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.num.Num;
+import org.ta4j.core.num.NumFactory;
 import strategy.engine.constant.IndicatorParam;
 import strategy.engine.indicator.ScaledIndicator;
 import strategy.engine.schemaobject.strategy.tree.IndicatorDefinition;
@@ -15,11 +17,11 @@ import strategy.engine.schemaobject.strategy.tree.IndicatorDefinition;
 public class IndicatorFactory {
 
     private final BarSeries series;
-    private final Num numProvider;
+    private final NumFactory numProvider;
 
-    public IndicatorFactory(BarSeries series, Num numProvider) {
+    public IndicatorFactory(BarSeries series) {
         this.series = series;
-        this.numProvider = numProvider;
+        this.numProvider = series.numFactory();
     }
 
     public Indicator<Num> create(IndicatorDefinition def) {
@@ -78,14 +80,6 @@ public class IndicatorFactory {
                 Indicator<Num> base = create(def.getInputs().get(0));
                 int barCount = (int) def.getParameters().get(IndicatorParam.BAR_COUNT);
                 yield new HighestValueIndicator(base, barCount);
-            }
-
-            case RECENT_SWING_HIGH -> {
-                Indicator<Num> high = create(def.getInputs().get(0));
-                int equal = (int) def.getParameters().get(IndicatorParam.ALLOWED_EQUAL_BARS);
-                int preceding = (int) def.getParameters().get(IndicatorParam.PRECEDING_LOWER_BARS);
-                int following = (int) def.getParameters().get(IndicatorParam.FOLLOWING_LOWER_BARS);
-                yield new RecentSwingHighIndicator(high, preceding, following, equal);
             }
 
             default -> throw new IllegalArgumentException("Unsupported indicator type: " + def.getIndicatorType());

@@ -6,20 +6,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.Bar;
+import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBar;
+import org.ta4j.core.bars.TimeBarBuilder;
+import org.ta4j.core.num.NumFactory;
 import strategy.engine.feignclient.BrokerIntegratorClient;
 import strategy.engine.service.MarketDataService;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @Slf4j
@@ -58,24 +64,19 @@ public class MarketDataServiceImpl implements MarketDataService {
     }
 
     @Override
-    public Bar historicalCsvStringToBar(String csvString, Duration duration) {
-        String[] cols = csvString.split(",");
+    public Bar historicalCsvStringToBar(String csvString, Duration duration, NumFactory numFactory) {
+        String[] parts = csvString.split(",");
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
+        ZonedDateTime endTime = ZonedDateTime.parse(parts[0], formatter);
 
-        ZonedDateTime endTime = ZonedDateTime.parse(cols[0], formatter);
-        double open = Double.parseDouble(cols[1]);
-        double high = Double.parseDouble(cols[2]);
-        double low = Double.parseDouble(cols[3]);
-        double close = Double.parseDouble(cols[4]);
-        double volume = Double.parseDouble(cols[5]);
-        return new BaseBar(
-            duration,
-            endTime,
-            open,
-            high,
-            low,
-            close,
-            volume
-        );
+        return new TimeBarBuilder()
+                .timePeriod(duration)
+                .endTime(Instant.from(endTime))
+                .openPrice(parts[1])
+                .highPrice(parts[2])
+                .lowPrice(parts[3])
+                .closePrice(parts[4])
+                .volume(parts[5])
+                .build();
     }
 }

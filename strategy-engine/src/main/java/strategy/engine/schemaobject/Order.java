@@ -1,34 +1,40 @@
 package strategy.engine.schemaobject;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import strategy.engine.constant.enums.TradeType;
+import lombok.*;
+import org.ta4j.core.Trade;
+import org.ta4j.core.num.Num;
+import strategy.engine.schemaobject.signal.Signal;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.Instant;
+import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Order {
+@With
+@Builder
+public record Order(String id, String instrument, int index, Instant timestamp, Trade.TradeType tradeType, BigDecimal price, BigDecimal capital) {
 
-    private String instrument;
-    private ZonedDateTime timestamp;
-    private TradeType tradeType;
-    private BigDecimal quantity;
-    private BigDecimal price;
-    private BigDecimal estimatedCost;
 
     public static Order empty(String instrument, Signal signal) {
-        Order order = new Order();
-        order.setInstrument(instrument);
-        order.setTimestamp(signal.getTimestamp());
-        order.setTradeType(null);
-        order.setQuantity(BigDecimal.ZERO);
-        order.setPrice(null);
-        order.setEstimatedCost(BigDecimal.ZERO);
-        return order;
+        return Order.builder()
+                .id(UUID.randomUUID().toString())
+                .instrument(instrument)
+                .index(signal.index())
+                .timestamp(signal.timestamp())
+                .price(BigDecimal.valueOf(-1))
+                .capital(BigDecimal.ZERO)
+                .build();
     }
+
+    public static Order empty(String instrument, BigDecimal price) {
+        return Order.builder()
+                .id(UUID.randomUUID().toString())
+                .instrument(instrument)
+                .index(-1)
+                .timestamp(Instant.now())
+                .price(price)
+                .capital(BigDecimal.ZERO)
+                .build();
+    }
+
 
 }

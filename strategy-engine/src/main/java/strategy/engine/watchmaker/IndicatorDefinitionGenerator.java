@@ -82,18 +82,6 @@ public class IndicatorDefinitionGenerator {
             inputs = List.of(generate(baseIndicators[rng.nextInt(3)], rng));
         }
 
-        if (IndicatorType.RECENT_SWING_HIGH.equals(indicatorType)) {
-            IndicatorType[] baseIndicators = new IndicatorType[]{CLOSE_PRICE, LOW_PRICE, HIGH_PRICE};
-            Number[] allowedBarCount = new Number[]{0, 1, 2, 5};
-            Number[] precedingBarCount = new Number[]{2, 5, 10, 15};
-            Number[] followingBarCount = new Number[]{1, 2, 5};
-            inputs = List.of(generate(baseIndicators[rng.nextInt(3)], rng));
-            parameters = Map.of(
-                IndicatorParam.ALLOWED_EQUAL_BARS, allowedBarCount[rng.nextInt(4)],
-                IndicatorParam.PRECEDING_LOWER_BARS, precedingBarCount[rng.nextInt(4)],
-                IndicatorParam.FOLLOWING_LOWER_BARS, followingBarCount[rng.nextInt(3)]);
-        }
-
         return new IndicatorDefinition(indicatorType, parameters, inputs);
     }
 

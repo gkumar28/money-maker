@@ -14,7 +14,6 @@ public enum IndicatorType {
     ATR,
     MACD,
     MACD_SIGNAL,
-    RECENT_SWING_HIGH,
     HIGHEST_VALUE,
     SCALED
 }

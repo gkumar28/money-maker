@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.Indicator;
 import org.ta4j.core.Rule;
-import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import org.ta4j.core.num.Num;
+import org.ta4j.core.num.NumFactory;
 import org.ta4j.core.rules.AndRule;
 import org.ta4j.core.rules.AverageTrueRangeStopGainRule;
 import org.ta4j.core.rules.AverageTrueRangeStopLossRule;
@@ -34,29 +34,28 @@ import strategy.engine.schemaobject.strategy.tree.RuleDefinition;
 import strategy.engine.schemaobject.strategy.tree.RuleSignature;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class RuleFactory {
 
     private final BarSeries barSeries;
     private final IndicatorFactory indicatorFactory;
+    private final NumFactory numFactory;
 
     public RuleFactory(BarSeries barSeries, IndicatorFactory indicatorFactory) {
         this.barSeries = barSeries;
         this.indicatorFactory = indicatorFactory;
+        this.numFactory = barSeries.numFactory();
     }
 
     public Rule create(RuleDefinition ruleDefinition) {
-        if (null == ruleDefinition) {
-            return null;
-        } else if (ruleDefinition instanceof LogicalRuleDefinition logicalRule) {
-            return createLogicalRule(logicalRule);
-        } else if (ruleDefinition instanceof LeafRuleDefinition leafRule) {
-            return createLeafRule(leafRule);
-        } else {
-            throw new IllegalArgumentException("Unknown RuleDefinition subtype: " + ruleDefinition.getClass());
-        }
+        return switch (ruleDefinition) {
+            case null -> null;
+            case LogicalRuleDefinition logicalRule -> createLogicalRule(logicalRule);
+            case LeafRuleDefinition leafRule -> createLeafRule(leafRule);
+            default ->
+                    throw new IllegalArgumentException("Unknown RuleDefinition subtype: " + ruleDefinition.getClass());
+        };
     }
 
     private Rule createLogicalRule(LogicalRuleDefinition logicalRuleDefinition) {
@@ -66,13 +65,13 @@ public class RuleFactory {
 
         if (children.size() == 1) {
             return switch(type) {
-                case NOT -> new NotRule(children.get(0));
-                default -> children.get(0);
+                case NOT -> new NotRule(children.getFirst());
+                default -> children.getFirst();
             };
         }
         return children.stream()
             .skip(1)
-            .reduce(children.get(0), (rule1, rule2) -> combine(rule1, rule2, type));
+            .reduce(children.getFirst(), (rule1, rule2) -> combine(rule1, rule2, type));
     }
 
     private Rule combine(Rule rule1, Rule rule2, LogicalRuleType type) {
@@ -117,7 +116,7 @@ public class RuleFactory {
                     return new OverIndicatorRule(indicators.get(0), indicators.get(1));
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
-                    return new OverIndicatorRule(indicators.get(0), threshold);
+                    return new OverIndicatorRule(indicators.getFirst(), threshold);
                 }
             }
         }
@@ -131,7 +130,7 @@ public class RuleFactory {
                     return new UnderIndicatorRule(indicators.get(0), indicators.get(1));
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
-                    return new UnderIndicatorRule(indicators.get(0), threshold);
+                    return new UnderIndicatorRule(indicators.getFirst(), threshold);
                 }
             }
         }
@@ -145,7 +144,7 @@ public class RuleFactory {
                     return new CrossedUpIndicatorRule(indicators.get(0), indicators.get(1));
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
-                    return new CrossedUpIndicatorRule(indicators.get(0), threshold);
+                    return new CrossedUpIndicatorRule(indicators.getFirst(), threshold);
                 } else if (signature.equals(LeafRuleSignature.Types.MACD_CROSSOVER.getSignature())) {
                     return new CrossedUpIndicatorRule(indicators.get(0), indicators.get(1));
                 }
@@ -161,7 +160,7 @@ public class RuleFactory {
                     return new CrossedDownIndicatorRule(indicators.get(0), indicators.get(1));
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
-                    return new CrossedDownIndicatorRule(indicators.get(0), threshold);
+                    return new CrossedDownIndicatorRule(indicators.getFirst(), threshold);
                 } else if (signature.equals(LeafRuleSignature.Types.MACD_CROSSOVER.getSignature())) {
                     return new CrossedUpIndicatorRule(indicators.get(0), indicators.get(1));
                 }
@@ -177,7 +176,7 @@ public class RuleFactory {
                     return new IsEqualRule(indicators.get(0), indicators.get(1));
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
-                    return new IsEqualRule(indicators.get(0), threshold);
+                    return new IsEqualRule(indicators.getFirst(), threshold);
                 }
             }
         }
@@ -190,7 +189,7 @@ public class RuleFactory {
                 if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_BAR_COUNT_AND_THRESHOLD.getSignature())) {
                     int barCount = (int) ruleDefinition.getParameters().get(RuleParam.BAR_COUNT);
                     double threshold = ((Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD)).doubleValue();
-                    return new IsRisingRule(indicators.get(0), barCount, threshold);
+                    return new IsRisingRule(indicators.getFirst(), barCount, threshold);
                 }
             }
         }
@@ -203,7 +202,7 @@ public class RuleFactory {
                 if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_BAR_COUNT_AND_THRESHOLD.getSignature())) {
                     int barCount = (int) ruleDefinition.getParameters().get(RuleParam.BAR_COUNT);
                     double threshold = ((Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD)).doubleValue();
-                    return new IsFallingRule(indicators.get(0), barCount, threshold);
+                    return new IsFallingRule(indicators.getFirst(), barCount, threshold);
                 }
             }
         }
@@ -219,7 +218,7 @@ public class RuleFactory {
                 } else if (signature.equals(LeafRuleSignature.Types.ONE_INDICATOR_WITH_THRESHOLD_AND_PERCENTAGE.getSignature())) {
                     Number threshold = (Number) ruleDefinition.getParameters().get(RuleParam.THRESHOLD);
                     double percentage = ((Number) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE)).doubleValue();
-                    return new WithinPercentageRule(indicators.get(0), threshold, percentage);
+                    return new WithinPercentageRule(indicators.getFirst(), threshold, percentage);
                 }
             }
         }
@@ -231,7 +230,7 @@ public class RuleFactory {
             if (signature.matches(ruleDefinition)) {
                 if (signature.equals(LeafRuleSignature.Types.CLOSE_PRICE_WITH_PERCENTAGE.getSignature())) {
                     Number percentage = (Number) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE);
-                    return new StopLossRule((ClosePriceIndicator) indicators.get(0), percentage);
+                    return new StopLossRule(indicators.getFirst(), percentage);
                 }
 
             }
@@ -244,7 +243,7 @@ public class RuleFactory {
             if (signature.matches(ruleDefinition)) {
                 if (signature.equals(LeafRuleSignature.Types.CLOSE_PRICE_WITH_PERCENTAGE.getSignature())) {
                     Number percentage = (Number) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE);
-                    return new StopGainRule((ClosePriceIndicator) indicators.get(0), percentage);
+                    return new StopGainRule(indicators.getFirst(), percentage);
                 }
             }
         }
@@ -257,7 +256,7 @@ public class RuleFactory {
                 if (signature.equals(LeafRuleSignature.Types.PRICE_WITH_PERCENTAGE_AND_BAR_COUNT.getSignature())) {
                     double percentage = ((Number) ruleDefinition.getParameters().get(RuleParam.PERCENTAGE)).doubleValue();
                     int barCount = (int) ruleDefinition.getParameters().get(RuleParam.BAR_COUNT);
-                    return new TrailingStopLossRule(indicators.get(0), barSeries.numOf(percentage), barCount);
+                    return new TrailingStopLossRule(indicators.get(0), numFactory.numOf(percentage), barCount);
                 }
             }
         }

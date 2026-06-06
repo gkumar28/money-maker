@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.money.maker'
 version = '0'
-sourceCompatibility = '17'
+sourceCompatibility = '21'
 
 repositories {
     mavenCentral()

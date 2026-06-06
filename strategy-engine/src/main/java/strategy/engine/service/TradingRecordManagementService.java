@@ -1,6 +1,6 @@
 package strategy.engine.service;
 
-import strategy.engine.schemaobject.analysis.TradingRecord;
+import org.ta4j.core.TradingRecord;
 
 import java.time.LocalDateTime;
 

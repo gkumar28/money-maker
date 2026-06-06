@@ -19,9 +19,8 @@ public class ScaledIndicator implements Indicator<Num> {
     }
 
     @Override
-    public int getUnstableBars() {
-        return targetIndicator.getUnstableBars();
-    }
+    public int getCountOfUnstableBars() { return targetIndicator.getCountOfUnstableBars(); }
+
 
     @Override
     public BarSeries getBarSeries() {

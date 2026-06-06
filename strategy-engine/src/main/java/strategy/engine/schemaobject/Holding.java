@@ -1,24 +1,21 @@
 package strategy.engine.schemaobject;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.With;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
-@Data
-@NoArgsConstructor
-public class Holding {
-    private String instrument;
-    private BigDecimal quantity = BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP);
-    private BigDecimal avgEntryPrice = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-    private BigDecimal lastTradePrice = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+@With
+public record Holding(String instrument, BigDecimal quantity, BigDecimal avgEntryPrice, BigDecimal investedCapital, BigDecimal maxInvestedCapital, BigDecimal value) {
 
-    private BigDecimal currentInvestedCapital = BigDecimal.ZERO;
-    private BigDecimal maxInvestedCapital = BigDecimal.ZERO;
-
-    public Holding(String instrument) {
-        this.instrument = instrument;
+    public static Holding instance(String instrument) {
+        return new Holding(
+                instrument,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO
+                );
     }
 }
 

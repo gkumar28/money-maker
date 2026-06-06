@@ -33,9 +33,13 @@ public class BarDataCache {
     }
 
     public BarSeries updateAndGetInstrument(String instrument, Bar bar) {
-        BarSeries instrumentData = get(instrument);
-        instrumentData.addBar(bar);
-        return instrumentData;
+        return cache.compute(instrument, (key, data) -> {
+            if (null == data) {
+                data = get(instrument);
+            }
+            data.addBar(bar);
+            return data;
+        });
     }
 
 

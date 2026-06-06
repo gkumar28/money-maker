@@ -3,8 +3,8 @@ package strategy.engine.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import strategy.engine.schemaobject.Trade;
-import strategy.engine.schemaobject.analysis.TradingRecord;
+import org.ta4j.core.Trade;
+import org.ta4j.core.TradingRecord;
 import strategy.engine.service.TradingRecordManagementService;
 
 import java.io.ByteArrayInputStream;
@@ -56,10 +56,10 @@ public class TradingRecordManagementServiceImpl implements TradingRecordManageme
     private String toCsv(Trade trade) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
         return String.format("%s,%s,%s,%s,%s",
-            formatter.format(trade.getTimestamp()),
-            trade.getTradeType(),
-            sanitize(trade.getQuantity()),
-            sanitize(trade.getPrice()),
-            sanitize(trade.getCost()));
+            formatter.format(trade.getTime()),
+            trade.getType(),
+            sanitize(trade.getAmount().bigDecimalValue()),
+            sanitize(trade.getPricePerAsset().bigDecimalValue()),
+            sanitize(trade.getCost().bigDecimalValue()));
     }
 }

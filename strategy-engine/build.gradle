@@ -19,7 +19,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 
     // For technical analysis
-    implementation 'org.ta4j:ta4j-core:0.17'
+    implementation 'org.ta4j:ta4j-core:0.22.4'
     implementation("org.ejml:ejml-all:0.41")
 
     // strategy backtesting and evolution

@@ -1,7 +1,9 @@
 package strategy.engine.schemaobject;
 
 import lombok.Data;
-import strategy.engine.schemaobject.analysis.TradingRecord;
+import org.ta4j.core.Position;
+import org.ta4j.core.Trade;
+import org.ta4j.core.TradingRecord;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -92,7 +94,7 @@ public class TradingReportGenerator {
         TradingReport instrumentReport = new TradingReport();
         instrumentReport.setInstrument(instrument);
 
-        BigDecimal profitLoss = tradingRecord.getOpenPosition().getProfitLoss();
+        BigDecimal profitLoss = tradingRecord.getCurrentPosition().getProfit().bigDecimalValue();
         BigDecimal profit = BigDecimal.ZERO;
         BigDecimal loss = BigDecimal.ZERO;
         if (profitLoss.compareTo(BigDecimal.ZERO) > 0) {
@@ -100,33 +102,34 @@ public class TradingReportGenerator {
         } else {
             loss = loss.add(profitLoss);
         }
-        BigDecimal investedCapital = tradingRecord.getOpenPosition().getInvestedCapital();
+        BigDecimal investedCapital = tradingRecord.getCurrentPosition().getEntry().getValue().bigDecimalValue();
         BigDecimal unrealizedProfitLoss = holding.getLastTradePrice().multiply(holding.getQuantity()).subtract(investedCapital);
 
         int profitCount = 0;
         int breakEvenCount = 0;
         int lossCount = 0;
+        int entryTradeFillCount = 0;
+        int exitTradeFillCount = 0;
 
         // Iterate over all closed positions
-        for (Position position : tradingRecord.getClosedPositions()) {
+        for (Position position : tradingRecord.getPositions()) {
             BigDecimal entryGrossValue = BigDecimal.ZERO;
             BigDecimal exitGrossValue = BigDecimal.ZERO;
             BigDecimal entryCost = BigDecimal.ZERO;
             BigDecimal exitCost = BigDecimal.ZERO;
 
-            for (Trade entry: position.getEntries()) {
-                entryGrossValue = entryGrossValue.add(entry.getGrossValue());
-                entryCost = entryCost.add(entry.getCost());
-            }
+            entryGrossValue = entryGrossValue.add(position.getEntry().getValue().bigDecimalValue());
+            entryCost = entryCost.add(position.getEntry().getCost().bigDecimalValue());
 
-            for (Trade exit: position.getExits()) {
-                exitGrossValue = exitGrossValue.add(exit.getGrossValue());
-                exitCost = exitCost.add(exit.getCost());
-            }
+            exitGrossValue = exitGrossValue.add(position.getExit().getValue().bigDecimalValue());
+            exitCost = exitCost.add(position.getExit().getCost().bigDecimalValue());
 
             BigDecimal positionPnL = exitGrossValue.subtract(entryGrossValue).subtract(entryCost).subtract(exitCost);
             profitLoss = profitLoss.add(positionPnL);
             investedCapital = investedCapital.add(entryCost).add(entryGrossValue);
+
+            entryTradeFillCount += position.getEntry().getFills().size();
+            entryTradeFillCount += position.getExit().getFills().size();
 
             // Count profit/break-even/loss trades
             int cmp = positionPnL.compareTo(BigDecimal.ZERO);
@@ -162,8 +165,8 @@ public class TradingReportGenerator {
         instrumentReport.setLoss(loss);
         instrumentReport.setUnrealizedPnL(unrealizedProfitLoss);
 
-        instrumentReport.setEntryTradeCount(tradingRecord.getEntryTradeCount());
-        instrumentReport.setExitTradeCount(tradingRecord.getExitTradeCount());
+        instrumentReport.setEntryTradeCount(entryTradeFillCount);
+        instrumentReport.setExitTradeCount(exitTradeFillCount);
 
         return instrumentReport;
     }

@@ -5,6 +5,7 @@ import org.ta4j.core.BarSeries;
 import org.ta4j.core.Indicator;
 import org.ta4j.core.indicators.CachedIndicator;
 import org.ta4j.core.num.Num;
+import org.ta4j.core.num.NumFactory;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -17,6 +18,7 @@ public class KallmanIndicator extends CachedIndicator<Num> {
     private final Indicator<Num> priceIndicator;
     private final Num q; // Process noise variance
     private final int rWindow; // Window size for measurement noise estimation
+    private final NumFactory numFactory;
 
     // Process noise covariance Q (2x2)
     private final SimpleMatrix noiseCovariance;
@@ -31,10 +33,11 @@ public class KallmanIndicator extends CachedIndicator<Num> {
 
     public KallmanIndicator(Indicator<Num> priceIndicator, double qValue, int rWindow) {
         super(priceIndicator.getBarSeries());
+        this.numFactory = priceIndicator.getBarSeries().numFactory();
         this.stateCache = new LinkedHashMap<>();
         this.stateCacheSizeLimit = priceIndicator.getBarSeries().getMaximumBarCount();
         this.priceIndicator = priceIndicator;
-        this.q = priceIndicator.numOf(qValue);
+        this.q = numFactory.numOf(qValue);
         this.rWindow = rWindow;
         noiseCovariance = new SimpleMatrix(new double[][]{
             {qValue, 0},
@@ -51,7 +54,7 @@ public class KallmanIndicator extends CachedIndicator<Num> {
                 SimpleMatrix.identity(2)
             );
             stateCache.put(0, initial);
-            return priceIndicator.numOf(initialPrice);
+            return numFactory.numOf(initialPrice);
         }
 
         KallmanState prev = stateCache.get(index - 1);
@@ -91,7 +94,7 @@ public class KallmanIndicator extends CachedIndicator<Num> {
             }
         }
         // z-score: prediction / std deviation
-        return priceIndicator.numOf(y.get(0, 0) / Math.sqrt(S.get(0, 0)));
+        return numFactory.numOf(y.get(0, 0) / Math.sqrt(S.get(0, 0)));
     }
 
     private double estimateMeasurementNoise(int index) {
@@ -118,19 +121,13 @@ public class KallmanIndicator extends CachedIndicator<Num> {
     }
 
     @Override
-    public int getUnstableBars() {
-        return 0;
-    }
+    public int getCountOfUnstableBars() { return 0; }
 
     @Override
     public BarSeries getBarSeries() {
         return priceIndicator.getBarSeries();
     }
 
-    @Override
-    public Num numOf(Number number) {
-        return priceIndicator.numOf(number);
-    }
 
     private record KallmanState(SimpleMatrix x, SimpleMatrix p) { }
 }

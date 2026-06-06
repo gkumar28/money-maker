@@ -14,7 +14,7 @@ public class RestConfig {
         return builder
             .defaultHeader(HttpHeaders.USER_AGENT, "MoneyMaker/1.0")
             .defaultHeader(HttpHeaders.CONNECTION, "keep-alive")
-            .defaultHeader(HttpHeaders.ACCEPT, "*/*")
+            .defaultHeader(HttpHeaders.ACCEPT, "application/json")
             .build();
     }
 }

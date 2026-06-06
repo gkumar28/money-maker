@@ -1,8 +1,10 @@
 package strategy.engine.service.impl;
 
+import org.ta4j.core.bars.TimeBarBuilder;
+import org.ta4j.core.num.DecimalNumFactory;
+import org.ta4j.core.num.NumFactory;
 import strategy.engine.config.external.BarConfiguration;
-import strategy.engine.schemaobject.Signal;
-import strategy.engine.schemaobject.Order;
+import strategy.engine.schemaobject.signal.SignalContext;
 import strategy.engine.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,11 +16,9 @@ import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseBarSeries;
 import org.ta4j.core.num.DecimalNum;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.sql.Time;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -30,9 +30,9 @@ import java.util.Set;
 import static strategy.engine.constant.ApplicationConstants.BAR;
 import static strategy.engine.constant.ApplicationConstants.DATA;
 import static strategy.engine.constant.ApplicationConstants.DELIMITER_DOT;
-import static strategy.engine.constant.ApplicationConstants.ORDER;
 import static strategy.engine.constant.ApplicationConstants.SIGNAL;
 import static strategy.engine.constant.ApplicationConstants.TIMESTAMP;
+import static strategy.engine.util.StrategyEngineUtils.sanitize;
 
 @Service
 @Slf4j
@@ -48,8 +48,7 @@ public class RedisServiceImpl implements RedisService {
 
         // Step 2: Get CSV string from hash
         Object value = redisTemplate.opsForHash().get(dataKey, timestamp);
-        ZonedDateTime endTime = Instant.ofEpochMilli(Long.parseLong(timestamp)).atZone(ZoneId.of("UTC"));
-        return getBar(instrument, value, endTime);
+        return getBar(instrument, value, Instant.ofEpochMilli(Long.parseLong(timestamp)));
     }
 
     @Override
@@ -58,11 +57,9 @@ public class RedisServiceImpl implements RedisService {
 
         // Step 2: Get CSV string from hash
         List<Object> values = redisTemplate.opsForHash().multiGet(dataKey, Arrays.asList(timestamps.toArray()));
-        BarSeries result = new BaseBarSeries(instrument, DecimalNum.ZERO);
+        BarSeries result = new BaseBarSeries(instrument, List.of());
         for(int i=0;i<values.size();i++) {
-            ZonedDateTime endTime = Instant.ofEpochMilli(Long.parseLong(timestamps.get(i)))
-                .atZone(ZoneId.of("UTC"));
-            result.addBar(getBar(instrument, values.get(i), endTime));
+            result.addBar(getBar(instrument, values.get(i), Instant.ofEpochMilli(Long.parseLong(timestamps.get(i)))));
         }
 
         return result;
@@ -74,7 +71,7 @@ public class RedisServiceImpl implements RedisService {
         Set<String> timestamps = redisTemplate.opsForZSet().range(timestampKey, offset, n - 1L + offset);
 
         if (null == timestamps) {
-            return new BaseBarSeries();
+            return new BaseBarSeries(instrument, List.of());
         }
 
         List<String> timestampList = new ArrayList<>(timestamps);
@@ -83,74 +80,38 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public void raiseSignalEvent(String instrument, Signal signal) {
+    public void raiseSignalEvent(String instrument, SignalContext signalContext) {
         String channelName = getKey(SIGNAL, instrument);
-        String value = toSignalString(signal);
+        String value = toSignalString(signalContext);
         redisTemplate.convertAndSend(channelName, value);
     }
 
-    @Override
-    public void raiseOrderEvent(Order order) {
-        String channelName = getKey(ORDER, order.getInstrument());
-        String value = toSizedOrderString(order);
-        redisTemplate.convertAndSend(channelName, value);
-    }
-
-    private String toSignalString(Signal signal) {
+    private String toSignalString(SignalContext signalContext) {
         return String.format("%s,%d,%s",
-            signal.getTradeType(),
-            Instant.from(signal.getTimestamp()).toEpochMilli(),
-            signal.getPrice().toPlainString());
+                sanitize(signalContext.signal().exposure()),
+            Instant.from(signalContext.signal().timestamp()).toEpochMilli(),
+            signalContext.metaData().price().toPlainString());
     }
-
-    private String toSizedOrderString(Order order) {
-        return String.format("%s,%d,%s,%s,%s,%s",
-            order.getInstrument(),
-            order.getTimestamp().toInstant().toEpochMilli(),
-            order.getTradeType(),
-            order.getQuantity().setScale(2, RoundingMode.HALF_UP),
-            valueOrEmpty(order.getPrice()),
-            valueOrEmpty(order.getEstimatedCost())
-        );
-    }
-
-    private static String valueOrEmpty(BigDecimal val) {
-        return val != null ? val.toPlainString() : "";
-    }
-
-    private Bar fromCsvString(String barEventValue, ZonedDateTime endTime) {
-
-        if (null == barEventValue) {
-            return new BaseBar(
-                Duration.of(barConfiguration.getTimeFrame(), ChronoUnit.SECONDS),
-                endTime,
-                DecimalNum::valueOf);
-        }
-
-        String[] parts = barEventValue.split(",");
-        return new BaseBar(
-            Duration.of(barConfiguration.getTimeFrame(), ChronoUnit.SECONDS),
-            endTime,
-            Double.parseDouble(parts[0]), // open
-            Double.parseDouble(parts[1]), // high
-            Double.parseDouble(parts[2]), // low
-            Double.parseDouble(parts[3]), // close
-            Double.parseDouble(parts[4]), // volume
-            Double.parseDouble(parts[5]), // amount
-            Long.parseLong(parts[6]), // trades
-            DecimalNum::valueOf
-        );
-    }
-
-    private Bar getBar(String instrument, Object data, ZonedDateTime endTime) {
+    private Bar getBar(String instrument, Object data, Instant endTime) {
         log.debug("data for instrument {}, timestamp {} : {}", instrument, endTime, data);
         if (null == data) {
-            return new BaseBar(
-                Duration.of(barConfiguration.getTimeFrame(), ChronoUnit.SECONDS),
-                endTime,
-                DecimalNum::valueOf);
+            return new TimeBarBuilder()
+                    .timePeriod(Duration.of(barConfiguration.getTimeFrame(), ChronoUnit.SECONDS))
+                    .endTime(endTime)
+                    .build();
         }
-        return fromCsvString(data.toString(), endTime);
+        String[] parts = data.toString().split(",");
+        return new TimeBarBuilder()
+            .timePeriod(Duration.of(barConfiguration.getTimeFrame(), ChronoUnit.SECONDS))
+            .endTime(endTime)
+            .openPrice(parts[0])
+            .highPrice(parts[1])
+            .lowPrice(parts[2])
+            .closePrice(parts[3])
+            .volume(parts[4])
+            .amount(parts[5])
+            .trades(parts[6])
+            .build();
     }
 
     private String getKey(String keySpace, String subKeySpace, String key) {
