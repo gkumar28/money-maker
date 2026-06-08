@@ -155,8 +155,8 @@ public class RiskManagementServiceImpl implements RiskManagementService {
     @Override
     public SignalContext triggerSLTP(Portfolio portfolio, String instrument, SignalContext signalContext) {
         Holding currentHolding = portfolio.getHolding(instrument);
-        BigDecimal slPrice = portfolio.getSlPrices().get(instrument);
-        BigDecimal tpPrice = portfolio.getTpPrices().get(instrument);
+        BigDecimal slPrice = portfolio.getSlPrice(instrument);
+        BigDecimal tpPrice = portfolio.getTpPrice(instrument);
         if (BigDecimal.ZERO.compareTo(currentHolding.quantity()) == 0 || slPrice == null || tpPrice == null) {
             return SignalContext.instance();
         }
@@ -175,8 +175,8 @@ public class RiskManagementServiceImpl implements RiskManagementService {
         }
 
 
-        portfolio.getSlPrices().remove(instrument);
-        portfolio.getTpPrices().remove(instrument);
+        portfolio.removeSlPrice(instrument);
+        portfolio.removeTpPrice(instrument);
         return signalContext.withSignal(signalContext.signal().withExposure(BigDecimal.valueOf(0.0)));
     }
 
@@ -194,11 +194,11 @@ public class RiskManagementServiceImpl implements RiskManagementService {
         if (stopLoss.compareTo(BigDecimal.ZERO) < 0) {
             stopLoss = BigDecimal.ZERO;
         }
-        portfolio.getSlPrices().put(instrument, stopLoss);
+        portfolio.putSlPrice(instrument, stopLoss);
 
         BigDecimal tpDistance = avgEntryPrice.multiply(TP_MULTIPLIER);
         BigDecimal takeProfit = avgEntryPrice.add(tpDistance);
-        portfolio.getTpPrices().put(instrument, takeProfit);
+        portfolio.putTpPrice(instrument, takeProfit);
         if (log.isDebugEnabled()) {
             log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(portfolio.getSlPrices().get(instrument)), sanitize(portfolio.getTpPrices().get(instrument)));
         }

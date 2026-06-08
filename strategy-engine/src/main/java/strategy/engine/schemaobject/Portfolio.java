@@ -25,17 +25,46 @@ public class Portfolio {
     private BigDecimal maxInvestedCapital;
     private BigDecimal value;
     private BigDecimal realizedPnL = BigDecimal.ZERO;
-    private Map<String, Holding> holdings = new ConcurrentHashMap<>();
     private Instant lastUpdated;
 
-    // helpers
-    @Getter
+    private Map<String, Holding> holdings = new ConcurrentHashMap<>();
     private Map<String, BigDecimal> slPrices = new ConcurrentHashMap<>();
-    @Getter
     private Map<String, BigDecimal> tpPrices = new ConcurrentHashMap<>();
 
     public Holding getHolding(String instrument) {
-        return holdings.computeIfAbsent(instrument, key -> Holding.instance(instrument));
+        return getHoldings().computeIfAbsent(instrument, key -> Holding.instance(instrument));
+    }
+
+    public void putHolding(String instrument, Holding value) {
+        getHoldings().computeIfPresent(instrument, (k, v) -> value);
+    }
+
+    public void removeHolding(String instrument) {
+        getHoldings().remove(instrument);
+    }
+
+    public BigDecimal getSlPrice(String instrument) {
+        return getSlPrices().getOrDefault(instrument, BigDecimal.ZERO);
+    }
+
+    public void putSlPrice(String instrument, BigDecimal value) {
+        getSlPrices().computeIfPresent(instrument, (k, v) -> value);
+    }
+
+    public void removeSlPrice(String instrument) {
+        getSlPrices().remove(instrument);
+    }
+
+    public BigDecimal getTpPrice(String instrument) {
+        return getTpPrices().getOrDefault(instrument, BigDecimal.valueOf(1e9));
+    }
+
+    public void putTpPrice(String instrument, BigDecimal value) {
+        getTpPrices().computeIfPresent(instrument, (k, v) -> value);
+    }
+
+    public void removeTpPrice(String instrument) {
+        getTpPrices().remove(instrument);
     }
 
     public synchronized void reset(BigDecimal newCapital) {
@@ -80,7 +109,11 @@ public class Portfolio {
                 newMaxInvestedCapital,
                 newValue);
 
-        this.getHoldings().put(instrument, newHolding);
+        if (newQty.compareTo(BigDecimal.ZERO) > 0) {
+            this.putHolding(instrument, newHolding);
+        } else {
+            this.removeHolding(instrument);
+        }
         this.setAvailableCapital(this.getAvailableCapital().subtract(capitalUtilizedInTrade));
         this.setInvestedCapital(this.getInvestedCapital().add(capitalUtilizedInTrade));
         this.setMaxInvestedCapital(
