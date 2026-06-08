@@ -66,6 +66,6 @@ public class StrategyDefinitionEvolution {
             new GenerationCount(10),
             new TargetFitness(150.0, true));
 
-        return result.get(0).getCandidate();
+        return result.getFirst().getCandidate();
     }
 }

@@ -11,7 +11,7 @@ import java.util.Random;
 
 public class EvolutionUtil {
 
-    private void EvolutionUtil() {}
+    private EvolutionUtil() {}
 
     public static RuleDefinition swap(RuleDefinition node, RuleDefinition selected, RuleDefinition target) {
         if (null == node || null == selected) {
