@@ -1,7 +1,6 @@
 package strategy.engine.schemaobject;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.ta4j.core.Trade;
 
 import java.math.BigDecimal;
@@ -16,7 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @NoArgsConstructor
-@Data
+@Setter(value = AccessLevel.PRIVATE)
+@Getter(value = AccessLevel.PRIVATE)
+@EqualsAndHashCode
 public class Portfolio {
     private BigDecimal initialCapital;
     private BigDecimal availableCapital;
@@ -28,15 +29,24 @@ public class Portfolio {
     private Instant lastUpdated;
 
     // helpers
+    @Getter
     private Map<String, BigDecimal> slPrices = new ConcurrentHashMap<>();
+    @Getter
     private Map<String, BigDecimal> tpPrices = new ConcurrentHashMap<>();
 
     public Holding getHolding(String instrument) {
         return holdings.computeIfAbsent(instrument, key -> Holding.instance(instrument));
     }
 
-    public Snapshot snapshot() {
-        return new Snapshot(initialCapital, availableCapital, investedCapital, maxInvestedCapital, value, holdings);
+    public synchronized void reset(BigDecimal newCapital) {
+        this.getHoldings().clear();
+        this.setAvailableCapital(newCapital);
+        this.setRealizedPnL(BigDecimal.ZERO);
+        this.setInitialCapital(newCapital);
+        this.setInvestedCapital(BigDecimal.ZERO);
+        this.setMaxInvestedCapital(BigDecimal.ZERO);
+        this.getTpPrices().clear();
+        this.getSlPrices().clear();
     }
 
     public synchronized Snapshot applyTrade(Trade trade) {
@@ -78,6 +88,10 @@ public class Portfolio {
         );
 
         return this.snapshot();
+    }
+
+    public Snapshot snapshot() {
+        return new Snapshot(initialCapital, availableCapital, investedCapital, maxInvestedCapital, value, holdings);
     }
 
     public record Snapshot(

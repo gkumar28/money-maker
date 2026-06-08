@@ -68,7 +68,7 @@ public class BacktestServiceImpl implements BacktestService {
 
         // setup backtest
         Portfolio portfolio = new Portfolio();
-        portfolioManagementService.resetPortfolio(portfolio, BigDecimal.valueOf(1000000));
+        portfolio.reset(BigDecimal.valueOf(1000000));
         TradingReportGenerator tradingReportGenerator = new TradingReportGenerator(portfolio);
         List<String> readyToTest = new ArrayList<>();
         Registry<TradingRecord> tradingRecordRegistry = new Registry<>();
@@ -162,7 +162,6 @@ public class BacktestServiceImpl implements BacktestService {
         DiscreteSignalStrategy.getBarSeries().addBar(bar);
 
         if (index > 0) {
-            portfolioManagementService.updateLastTradedPrice(portfolio, instrument, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             Signal newSignal = DiscreteSignalStrategy.evaluate(index - 1);
             Order order = riskManagementService.triggerSLTP(portfolio, instrument, newSignal, barSeries.getBar(index - 1).getClosePrice().bigDecimalValue());
             if (null == order) {

@@ -40,6 +40,7 @@ public class TradingReportGenerator {
         BigDecimal portfolioLoss = BigDecimal.ZERO;
         int portfolioEntryTradeCount = 0;
         int portfolioExitTradeCount = 0;
+        Portfolio.Snapshot snapshot = portfolio.snapshot();
 
         for (String instrument: tradingRecords.keySet()) {
             TradingReport instrumentReport = generate(instrument);
@@ -63,11 +64,11 @@ public class TradingReportGenerator {
             portfolioProfitLossPercentage = portfolioProfitLoss.divide(portfolioTotalInvestedCapital, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         }
 
-        portfolioReport.setInitialCapital(portfolio.getInitialCapital());
-        portfolioReport.setAvailableCapital(portfolio.getAvailableCapital());
+        portfolioReport.setInitialCapital(snapshot.initialCapital());
+        portfolioReport.setAvailableCapital(snapshot.availableCapital());
         portfolioReport.setTotalInvestedCapital(portfolioTotalInvestedCapital);
-        portfolioReport.setCurrentInvestedCapital(portfolio.getCurrentInvestedCapital());
-        portfolioReport.setMaxInvestedCapital(portfolio.getMaxInvestedCapital());
+        portfolioReport.setCurrentInvestedCapital(snapshot.investedCapital());
+        portfolioReport.setMaxInvestedCapital(snapshot.maxInvestedCapital());
 
         portfolioReport.setProfitCount(portfolioProfitCount);
         portfolioReport.setBreakEvenCount(portfolioBreakEvenCount);
@@ -89,7 +90,7 @@ public class TradingReportGenerator {
 
     private TradingReport generate(String instrument) {
         TradingRecord tradingRecord = tradingRecords.get(instrument);
-        Holding holding = portfolio.getHoldings().getOrDefault(instrument, new Holding());
+        Holding holding = portfolio.getHolding(instrument);
 
         TradingReport instrumentReport = new TradingReport();
         instrumentReport.setInstrument(instrument);
@@ -103,7 +104,7 @@ public class TradingReportGenerator {
             loss = loss.add(profitLoss);
         }
         BigDecimal investedCapital = tradingRecord.getCurrentPosition().getEntry().getValue().bigDecimalValue();
-        BigDecimal unrealizedProfitLoss = holding.getLastTradePrice().multiply(holding.getQuantity()).subtract(investedCapital);
+        BigDecimal unrealizedProfitLoss = holding.value().subtract(investedCapital);
 
         int profitCount = 0;
         int breakEvenCount = 0;
@@ -151,8 +152,8 @@ public class TradingReportGenerator {
         }
 
         instrumentReport.setInstrument(instrument);
-        instrumentReport.setCurrentInvestedCapital(holding.getCurrentInvestedCapital());
-        instrumentReport.setMaxInvestedCapital(holding.getMaxInvestedCapital());
+        instrumentReport.setCurrentInvestedCapital(holding.investedCapital());
+        instrumentReport.setMaxInvestedCapital(holding.maxInvestedCapital());
         instrumentReport.setTotalInvestedCapital(investedCapital);
 
         instrumentReport.setProfitCount(profitCount);

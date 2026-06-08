@@ -51,7 +51,7 @@ public class RiskManagementServiceImpl implements RiskManagementService {
             return SignalContext.instance();
         }
 
-        BigDecimal portfolioValue = portfolio.getValue();
+        BigDecimal portfolioValue = portfolio.snapshot().value();
         BigDecimal instrumentValue = portfolio.getHolding(instrument).value();
         BigDecimal signal = signalContext.signal().exposure();
         BigDecimal currentExposure = instrumentValue.divide(portfolioValue, RoundingMode.HALF_UP);
@@ -79,19 +79,20 @@ public class RiskManagementServiceImpl implements RiskManagementService {
                                          BigDecimal currentExposure,
                                          BigDecimal targetExposure,
                                          SignalContext signalContext) {
+        Portfolio.Snapshot snapshot = portfolio.snapshot();
         // calculate estimated quantity for the trade using fixed capital allocation
         // using base capital allocation (2% of account)
-        BigDecimal baseCapital = portfolio.getAvailableCapital().multiply(BASE_CAPITAL_ALLOCATION_PCT);
+        BigDecimal baseCapital = snapshot.availableCapital().multiply(BASE_CAPITAL_ALLOCATION_PCT);
         BigDecimal allocatedCapital = getEstimatedCapitalAllocation(baseCapital, signalContext);
 
-        BigDecimal capitalToReachTarget = portfolio.getValue().multiply(targetExposure.subtract(currentExposure));
+        BigDecimal capitalToReachTarget = snapshot.value().multiply(targetExposure.subtract(currentExposure));
 
-        BigDecimal maxAllowedAllocation = portfolio.getAvailableCapital().multiply(MAX_CAPITAL_ALLOCATION_PCT);
+        BigDecimal maxAllowedAllocation = snapshot.availableCapital().multiply(MAX_CAPITAL_ALLOCATION_PCT);
 
         BigDecimal capitalToBeInvested = allocatedCapital.min(capitalToReachTarget).min(maxAllowedAllocation)
                 .subtract(getEstimatedCost(Trade.TradeType.BUY));
         BigDecimal actualTargetExposure = portfolio.getHolding(instrument).value().add(capitalToBeInvested)
-                .divide(portfolio.getValue(), RoundingMode.HALF_UP);
+                .divide(snapshot.value(), RoundingMode.HALF_UP);
 
         if (actualTargetExposure.subtract(currentExposure).abs().compareTo(minExposureChange) <= 0) {
             return SignalContext.instance();

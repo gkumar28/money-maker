@@ -17,51 +17,9 @@ import static strategy.engine.util.StrategyEngineUtils.sanitize;
 @Slf4j
 public class PortfolioManagementServiceImpl implements PortfolioManagementService {
 
-
-    @Override
-    public BigDecimal getTotalValue(Portfolio portfolio) {
-        return portfolio.getAvailableCapital();
-    }
-
-    @Override
-    public void init(Portfolio portfolio, BigDecimal initialCapital, BigDecimal availableCapital) {
-        portfolio.setInitialCapital(initialCapital);
-        portfolio.setAvailableCapital(availableCapital);
-        portfolio.getTpPrices().clear();
-        portfolio.getSlPrices().clear();
-    }
-
-    @Override
-    public void resetPortfolio(Portfolio portfolio, BigDecimal newCapital) {
-        portfolio.getHoldings().clear();
-        portfolio.setAvailableCapital(newCapital);
-        portfolio.setRealizedPnL(BigDecimal.ZERO);
-        portfolio.setInitialCapital(newCapital);
-        portfolio.setInvestedCapital(BigDecimal.ZERO);
-        portfolio.setMaxInvestedCapital(BigDecimal.ZERO);
-        portfolio.getTpPrices().clear();
-        portfolio.getSlPrices().clear();
-    }
-
-    @Override
-    public Holding getCurrentHoldings(Portfolio portfolio, String instrument) {
-        return portfolio.getHolding(instrument);
-    }
-
     @Override
     public List<String> getInstruments() {
         return List.of("RELIANCE");
-    }
-
-    // TO-DO: move this to market data layer and devise a way to construct current value using holding and market data
-    @Override
-    public void updateLastTradedPrice(Portfolio portfolio, String instrument, BigDecimal currentPrice) {
-        Holding holding = getCurrentHoldings(portfolio, instrument);
-        if (holding.quantity().compareTo(BigDecimal.ZERO) == 0) {
-            return;
-        }
-
-        portfolio.getHoldings().put(instrument, holding.withValue(currentPrice.multiply(holding.quantity())));
     }
 
     @Override
