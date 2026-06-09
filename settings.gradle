@@ -1,4 +1,5 @@
 rootProject.name = 'money-maker'
+include 'common-lib'
 include 'broker-integrator'
 include 'data-emitter'
 include 'data-aggregator'

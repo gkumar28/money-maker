@@ -32,7 +32,7 @@ public class StrategyDefinitionEvolution {
     private final FitnessEvaluator<StrategyDefinition> fitnessEvaluator;
     private final boolean plusSelection;
 
-    public StrategyDefinitionEvolution(StrategyBacktestService strategyBacktestService, List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
+    public StrategyDefinitionEvolution(StrategyBacktestService strategyBacktestService, String instrument, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
         IndicatorDefinitionGenerator indicatorDefinitionGenerator = new IndicatorDefinitionGenerator();
         RuleDefinitionGenerator ruleDefinitionGenerator = new RuleDefinitionGenerator(indicatorDefinitionGenerator);
         candidateFactory = new StrategyCandidateFactory(ruleDefinitionGenerator);
@@ -44,7 +44,7 @@ public class StrategyDefinitionEvolution {
                         new LogicalToLeafRuleMutation(ruleDefinitionGenerator),
                         new LogicalToLogicalRuleMutation(ruleDefinitionGenerator)),
                 new double[]{0.25, 0.25, 0.25, 0.25})));
-        FitnessEvaluator<StrategyDefinition> strategyFitnessEvaluator = new StrategyFitnessEvaluator(strategyBacktestService, instruments, exchange, interval, fromDate, toDate);
+        FitnessEvaluator<StrategyDefinition> strategyFitnessEvaluator = new StrategyFitnessEvaluator(strategyBacktestService, instrument, exchange, interval, fromDate, toDate);
         fitnessEvaluator = new CachingFitnessEvaluator<>(strategyFitnessEvaluator);
         plusSelection = true;
     }

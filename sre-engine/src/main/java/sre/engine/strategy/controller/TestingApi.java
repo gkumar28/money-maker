@@ -30,7 +30,7 @@ public interface TestingApi {
 
 
     @PostMapping("/run-evolution-sim")
-    ResponseEntity<Future<StrategyDefinition>> evolve(@RequestParam List<String> instruments,
+    ResponseEntity<Future<StrategyDefinition>> evolve(@RequestParam String instrument,
                                                       @RequestParam String exchange,
                                                       @RequestParam String interval,
                                                       @RequestParam LocalDate fromDate,

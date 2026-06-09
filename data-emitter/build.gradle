@@ -1,27 +1,19 @@
+plugins {
+    id 'org.springframework.boot' version '3.2.5'
+}
+
 version='0.0.1'
 
 dependencies {
-    // Spring Boot Core
+    // maven BOM
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-    // data
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-
-    // compilation only
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.core:jackson-core'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-
-    // tick processing
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-
-    // common
     implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.core:jackson-core'
-
-    // testing
-    testImplementation platform('org.junit:junit-bom:5.11.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
 }

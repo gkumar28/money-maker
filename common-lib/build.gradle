@@ -1,0 +1,11 @@
+plugins {
+    id 'java-library'
+}
+
+version='0.0.4'
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    implementation 'io.opentelemetry:opentelemetry-api:1.62.0'
+}

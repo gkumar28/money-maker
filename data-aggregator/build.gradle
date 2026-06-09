@@ -1,31 +1,21 @@
+plugins {
+    id 'org.springframework.boot' version '3.2.5'
+}
 version='0.0.1'
 
 dependencies {
-    // Spring Boot Core
+    // maven BOM
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-    // data
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-
-    // compilation only
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.core:jackson-core'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // For technical analysis
     implementation 'org.ta4j:ta4j-core:0.17'
     implementation("org.ejml:ejml-all:0.41")
-
-    // Email alerting (optional)
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-
-    // common
     implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.core:jackson-core'
     implementation 'com.cronutils:cron-utils:9.2.0'
-
-    // testing
-    testImplementation platform('org.junit:junit-bom:5.11.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
 }

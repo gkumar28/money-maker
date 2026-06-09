@@ -1,5 +1,6 @@
 package sre.engine.strategy.service.impl;
 
+import common.lib.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -24,7 +25,6 @@ import sre.engine.strategy.strategy.DiscreteSignalStrategy;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -81,20 +81,12 @@ public class StrategyBacktestServiceImpl implements StrategyBacktestService {
                 .withNumFactory(DecimalNumFactory.getInstance())
                 .withMaxBarCount(2000)
                 .withSeriesBeginIndex(0)
-                .withBarBuilderFactory(new TimeBarBuilderFactory(getDuration(interval)))
+                .withBarBuilderFactory(new TimeBarBuilderFactory(CommonUtils.getDuration(interval)))
                 .withDataProvider(new FileBarDataProvider(path))
                 .build();
     }
 
-    private Duration getDuration(String interval) {
-        return switch(interval) {
-            case "minute", "1minute" -> Duration.ofMinutes(1);
-            case "3minute" -> Duration.ofMinutes(3);
-            case "5minute" -> Duration.ofMinutes(5);
-            case "60minute" -> Duration.ofMinutes(60);
-            default -> Duration.ofDays(1);
-        };
-    }
+
 
     @Override
     public List<Map<String, Object>> getIndicatorValues(String instrument, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {

@@ -34,8 +34,8 @@ public class TestingApiController implements TestingApi {
     }
 
     @Override
-    public ResponseEntity<Future<StrategyDefinition>> evolve(List<String> instruments, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
-        StrategyDefinitionEvolution evolution = new StrategyDefinitionEvolution(strategyBacktestService, instruments, exchange, interval, fromDate, toDate);
+    public ResponseEntity<Future<StrategyDefinition>> evolve(String instrument, String exchange, String interval, LocalDate fromDate, LocalDate toDate) {
+        StrategyDefinitionEvolution evolution = new StrategyDefinitionEvolution(strategyBacktestService, instrument, exchange, interval, fromDate, toDate);
 
         return ResponseEntity.ok(asyncService.run(evolution::evolve));
     }
