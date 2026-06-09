@@ -1,8 +1,0 @@
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,loggers,info,mappings
-
-bar:
-  time-frame: 60
