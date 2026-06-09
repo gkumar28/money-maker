@@ -11,5 +11,4 @@ public interface MarketDataService {
 
     Path loadRawData(String instrument, String exchange, LocalDateTime fromDate, LocalDateTime toDate, String interval);
 
-    Bar historicalCsvStringToBar(String csvString, Duration duration, NumFactory numFactory);
 }

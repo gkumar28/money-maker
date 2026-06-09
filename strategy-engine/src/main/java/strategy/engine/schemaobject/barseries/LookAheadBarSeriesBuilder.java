@@ -5,6 +5,7 @@ import org.ta4j.core.BarBuilderFactory;
 import org.ta4j.core.bars.TimeBarBuilderFactory;
 import org.ta4j.core.num.DecimalNumFactory;
 import org.ta4j.core.num.NumFactory;
+import strategy.engine.schemaobject.barseries.provider.BarDataProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,10 +26,8 @@ public class LookAheadBarSeriesBuilder {
 
     private boolean isNumFactoryAssigned = false;
     private NumFactory numFactory = DecimalNumFactory.getInstance();
-
     private BarBuilderFactory barBuilderFactory = new TimeBarBuilderFactory();
-
-    private LookAheadBarSeries.BarDataProvider dataProvider;
+    private BarDataProvider dataProvider;
 
     public LookAheadBarSeriesBuilder() {
         initValues();
@@ -155,7 +154,7 @@ public class LookAheadBarSeriesBuilder {
     }
 
     public LookAheadBarSeriesBuilder withDataProvider(
-            LookAheadBarSeries.BarDataProvider dataProvider) {
+            BarDataProvider dataProvider) {
 
         this.dataProvider = dataProvider;
         return this;

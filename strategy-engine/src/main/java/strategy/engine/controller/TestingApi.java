@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.ta4j.core.reports.TradingStatement;
 import strategy.engine.schemaobject.TradingReport;
 import strategy.engine.strategy.StrategyDefinition;
 
@@ -15,11 +16,11 @@ import java.util.concurrent.Future;
 @RequestMapping("/test")
 public interface TestingApi {
     @PostMapping("/run-back-test")
-    ResponseEntity<TradingReport> backtest(@RequestParam List<String> instruments,
-                                           @RequestParam String exchange,
-                                           @RequestParam String interval,
-                                           @RequestParam LocalDate fromDate,
-                                           @RequestParam LocalDate toDate);
+    ResponseEntity<TradingStatement> backtest(@RequestParam String instrument,
+                                              @RequestParam String exchange,
+                                              @RequestParam String interval,
+                                              @RequestParam LocalDate fromDate,
+                                              @RequestParam LocalDate toDate);
 
     @GetMapping("/indicators/kallman")
     ResponseEntity<Object> getKallmanPrediction(@RequestParam String instrument,

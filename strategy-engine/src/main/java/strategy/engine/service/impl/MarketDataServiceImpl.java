@@ -63,20 +63,4 @@ public class MarketDataServiceImpl implements MarketDataService {
         return null;
     }
 
-    @Override
-    public Bar historicalCsvStringToBar(String csvString, Duration duration, NumFactory numFactory) {
-        String[] parts = csvString.split(",");
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
-        ZonedDateTime endTime = ZonedDateTime.parse(parts[0], formatter);
-
-        return new TimeBarBuilder()
-                .timePeriod(duration)
-                .endTime(Instant.from(endTime))
-                .openPrice(parts[1])
-                .highPrice(parts[2])
-                .lowPrice(parts[3])
-                .closePrice(parts[4])
-                .volume(parts[5])
-                .build();
-    }
 }

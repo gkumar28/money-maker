@@ -10,6 +10,7 @@ import org.ta4j.core.bars.TimeBarBuilderFactory;
 import org.ta4j.core.num.DecimalNumFactory;
 import org.ta4j.core.num.Num;
 import org.ta4j.core.num.NumFactory;
+import strategy.engine.schemaobject.barseries.provider.BarDataProvider;
 
 import java.io.Serial;
 import java.util.ArrayList;
@@ -48,14 +49,9 @@ public class LookAheadBarSeries implements BarSeries {
         this.dataProvider = dataProvider;
         this.fetchCount = fetchCount;
         this.seriesBeginIndex = seriesBeginIndex;
-        this.seriesEndIndex = seriesEndIndex;
+        this.seriesEndIndex = Math.max(seriesEndIndex, dataProvider.getDataSize());
         this.cacheStartIndex = cacheStartIndex;
         this.maximumBarCount = maximumBarCount;
-    }
-
-    @FunctionalInterface
-    public interface BarDataProvider {
-        List<Bar> fetchBars(int startIndex, int count);
     }
 
     private final String name;
@@ -122,7 +118,7 @@ public class LookAheadBarSeries implements BarSeries {
                 requestedIndex - Math.min(maximumBarCount - 1, requestedIndex));
 
         List<Bar> fetched =
-                dataProvider.fetchBars(startIndex, Math.max(fetchCount, maximumBarCount));
+                dataProvider.fetchBars(startIndex, Math.max(fetchCount, maximumBarCount), barBuilderFactory.createBarBuilder(this));
 
         if (fetched.isEmpty()) {
             throw new IndexOutOfBoundsException(
@@ -142,7 +138,7 @@ public class LookAheadBarSeries implements BarSeries {
 
             int nextFetchIndex = cacheStartIndex + bars.size();
 
-            List<Bar> fetched = dataProvider.fetchBars(nextFetchIndex, fetchCount);
+            List<Bar> fetched = dataProvider.fetchBars(nextFetchIndex, fetchCount, barBuilderFactory.createBarBuilder(this));
 
             if (fetched.isEmpty()) {
                 throw new IndexOutOfBoundsException("Unable to fetch bar " + requestedIndex);
@@ -204,14 +200,7 @@ public class LookAheadBarSeries implements BarSeries {
 
     @Override
     public void addBar(Bar bar, boolean replace) {
-
-        if (replace && !bars.isEmpty()) {
-            bars.set(bars.size() - 1, bar);
-        } else {
-            bars.add(bar);
-        }
-
-        trimToMaximum();
+        throw new UnsupportedOperationException("Read only bar series cannot add new bars");
     }
 
     @Override

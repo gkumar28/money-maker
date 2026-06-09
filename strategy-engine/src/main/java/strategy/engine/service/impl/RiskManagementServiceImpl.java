@@ -200,7 +200,7 @@ public class RiskManagementServiceImpl implements RiskManagementService {
         BigDecimal takeProfit = avgEntryPrice.add(tpDistance);
         portfolio.putTpPrice(instrument, takeProfit);
         if (log.isDebugEnabled()) {
-            log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(portfolio.getSlPrices().get(instrument)), sanitize(portfolio.getTpPrices().get(instrument)));
+            log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(portfolio.getSlPrice(instrument)), sanitize(portfolio.getTpPrice(instrument)));
         }
     }
 }

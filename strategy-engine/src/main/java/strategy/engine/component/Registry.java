@@ -21,6 +21,7 @@ public  class  Registry<V> {
 
     public void clearAll() { map.clear(); }
 
+    public int size() { return map.size(); }
     public Map<String, V> getAll() {
         return map;
     }

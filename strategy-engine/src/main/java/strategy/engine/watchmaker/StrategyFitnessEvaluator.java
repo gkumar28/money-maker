@@ -2,12 +2,12 @@ package strategy.engine.watchmaker;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ta4j.core.backtest.BacktestExecutionResult;
+import org.ta4j.core.reports.TradingStatement;
 import org.uncommons.watchmaker.framework.FitnessEvaluator;
-import strategy.engine.schemaobject.TradingReport;
-import strategy.engine.service.BacktestService;
+import strategy.engine.service.StrategyBacktestService;
 import strategy.engine.strategy.StrategyDefinition;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -15,8 +15,8 @@ import java.util.List;
 @Slf4j
 public class StrategyFitnessEvaluator implements FitnessEvaluator<StrategyDefinition> {
 
-    private final BacktestService backtestService;
-    private final List<String> instruments;
+    private final StrategyBacktestService strategyBacktestService;
+    private final String instrument;
     private final String exchange;
     private final String interval;
     private final LocalDate fromDate;
@@ -24,15 +24,15 @@ public class StrategyFitnessEvaluator implements FitnessEvaluator<StrategyDefini
 
     @Override
     public double getFitness(StrategyDefinition candidate, List<? extends StrategyDefinition> population) {
-        TradingReport report = backtestService.backtest(
-            instruments,
+        TradingStatement tradingStatement = strategyBacktestService.backtest(
+            instrument,
             exchange,
             interval,
             fromDate,
             toDate,
             false,
             candidate);
-        return 100.0 + report.getProfitLossPercentage().doubleValue();
+        return 100.0 + tradingStatement.getPerformanceReport().totalProfitLossPercentage.doubleValue();
     }
 
     @Override
