@@ -19,9 +19,8 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    implementation 'org.ta4j:ta4j-core:0.22.4'
     implementation 'org.ejml:ejml-all:0.41'
     implementation 'org.uncommons.watchmaker:watchmaker-framework:0.7.1'
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
+
     implementation project(':common-lib')
 }

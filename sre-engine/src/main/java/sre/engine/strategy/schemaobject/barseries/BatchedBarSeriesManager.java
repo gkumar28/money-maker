@@ -8,7 +8,7 @@ import org.ta4j.core.backtest.BarSeriesManager;
 import org.ta4j.core.backtest.TradeExecutionModel;
 import org.ta4j.core.backtest.TradeOnNextOpenModel;
 import org.ta4j.core.num.Num;
-import sre.engine.strategy.component.Registry;
+import common.lib.schemaobjects.Registry;
 
 import java.util.Objects;
 import java.util.Set;
@@ -22,7 +22,7 @@ public class BatchedBarSeriesManager extends BarSeriesManager {
     private final int batchSize;
     private final Registry<Strategy> strategyRegistry;
     private final Registry<TradingRecord> tradingRecordRegistry;
-    private final int seriesMaximumBarCount;
+
     public BatchedBarSeriesManager(int batchSize, BarSeries barSeries) {
         this(batchSize, barSeries, new ZeroCostModel(), new ZeroCostModel(), new TradeOnNextOpenModel());
     }
@@ -43,7 +43,6 @@ public class BatchedBarSeriesManager extends BarSeriesManager {
         this.batchSize = batchSize;
         this.strategyRegistry = new Registry<>();
         this.tradingRecordRegistry = new Registry<>();
-        this.seriesMaximumBarCount = barSeries.getMaximumBarCount();
     }
 
 
@@ -54,7 +53,6 @@ public class BatchedBarSeriesManager extends BarSeriesManager {
         this.batchSize = batchSize;
         this.strategyRegistry = new Registry<>();
         this.tradingRecordRegistry = new Registry<>();
-        this.seriesMaximumBarCount = barSeries.getMaximumBarCount();
     }
 
     @Override

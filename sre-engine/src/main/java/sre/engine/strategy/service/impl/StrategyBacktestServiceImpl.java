@@ -1,6 +1,6 @@
 package sre.engine.strategy.service.impl;
 
-import common.lib.utils.CommonUtils;
+import common.lib.utils.GenericUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -81,7 +81,7 @@ public class StrategyBacktestServiceImpl implements StrategyBacktestService {
                 .withNumFactory(DecimalNumFactory.getInstance())
                 .withMaxBarCount(2000)
                 .withSeriesBeginIndex(0)
-                .withBarBuilderFactory(new TimeBarBuilderFactory(CommonUtils.getDuration(interval)))
+                .withBarBuilderFactory(new TimeBarBuilderFactory(GenericUtils.getDuration(interval)))
                 .withDataProvider(new FileBarDataProvider(path))
                 .build();
     }

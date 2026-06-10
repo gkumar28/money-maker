@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.ta4j.core.Strategy;
 import org.ta4j.core.TradingRecord;
-import sre.engine.strategy.component.Registry;
+import common.lib.schemaobjects.Registry;
 
 @Configuration
 public class BeanConfig {

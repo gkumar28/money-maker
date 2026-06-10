@@ -8,11 +8,13 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.*;
 import sre.engine.strategy.cache.BarDataCache;
-import sre.engine.strategy.schemaobject.Portfolio;
+import common.lib.schemaobjects.Portfolio;
 import sre.engine.strategy.service.PortfolioManagementService;
 import sre.engine.strategy.strategy.StrategyDefinition;
 import sre.engine.strategy.strategy.StrategyDefinitionParser;
 import sre.engine.strategy.strategy.DiscreteSignalStrategy;
+
+import common.lib.schemaobjects.Registry;
 
 @Component
 @RequiredArgsConstructor

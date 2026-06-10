@@ -21,12 +21,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
+import static common.lib.utils.GenericUtils.sanitize;
 import static sre.engine.strategy.constant.ApplicationConstants.BAR;
 import static sre.engine.strategy.constant.ApplicationConstants.DATA;
 import static sre.engine.strategy.constant.ApplicationConstants.DELIMITER_DOT;
 import static sre.engine.strategy.constant.ApplicationConstants.SIGNAL;
 import static sre.engine.strategy.constant.ApplicationConstants.TIMESTAMP;
-import static sre.engine.strategy.util.StrategyEngineUtils.sanitize;
 
 @Service
 @Slf4j

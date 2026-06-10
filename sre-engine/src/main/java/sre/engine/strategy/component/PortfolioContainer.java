@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import sre.engine.strategy.schemaobject.Portfolio;
+import common.lib.schemaobjects.Portfolio;
 
 @Data
 @Component

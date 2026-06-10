@@ -5,7 +5,7 @@ import org.ta4j.core.TradingRecord;
 import sre.engine.strategy.cache.BarDataCache;
 import sre.engine.strategy.cache.TradeSignalCache;
 import sre.engine.strategy.component.PortfolioContainer;
-import sre.engine.strategy.component.Registry;
+import common.lib.schemaobjects.Registry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import sre.engine.strategy.schemaobject.signal.SignalContext;

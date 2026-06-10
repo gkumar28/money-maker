@@ -1,7 +1,7 @@
 package sre.engine.strategy.service;
 
 import org.ta4j.core.Trade;
-import sre.engine.strategy.schemaobject.Portfolio;
+import common.lib.schemaobjects.Portfolio;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package sre.engine.strategy.service;
 
-import sre.engine.strategy.schemaobject.Portfolio;
+import common.lib.schemaobjects.Portfolio;
 import sre.engine.strategy.schemaobject.signal.SignalContext;
 
 public interface RiskManagementService {

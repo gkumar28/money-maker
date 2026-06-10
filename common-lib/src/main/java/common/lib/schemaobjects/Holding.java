@@ -1,4 +1,4 @@
-package sre.engine.strategy.schemaobject;
+package common.lib.schemaobjects;
 
 import lombok.With;
 

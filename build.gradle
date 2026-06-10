@@ -32,6 +32,10 @@ subprojects {
     }
 
     dependencies {
+
+        implementation 'org.ta4j:ta4j-core:0.22.4'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
+
         testImplementation platform('org.junit:junit-bom:5.11.0')
         testImplementation 'org.junit.jupiter:junit-jupiter'
     }

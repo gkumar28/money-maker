@@ -3,10 +3,12 @@ package common.lib.utils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class CommonUtils {
+public class GenericUtils {
 
     public static Duration getDuration(String interval) {
         try {
@@ -24,4 +26,9 @@ public class CommonUtils {
             throw new IllegalArgumentException("Cannot parse given interval value: " + interval);
         }
     }
+
+    public static BigDecimal sanitize(BigDecimal value) {
+        return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
 }

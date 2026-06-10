@@ -1,7 +1,6 @@
-package sre.engine.strategy.component;
+package common.lib.schemaobjects;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

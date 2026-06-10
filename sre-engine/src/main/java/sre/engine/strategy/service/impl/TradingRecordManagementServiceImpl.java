@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static sre.engine.strategy.util.StrategyEngineUtils.sanitize;
+import static common.lib.utils.GenericUtils.sanitize;
 
 @Slf4j
 @Service

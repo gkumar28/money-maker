@@ -5,16 +5,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.Trade;
-import sre.engine.strategy.schemaobject.Holding;
-import sre.engine.strategy.schemaobject.Portfolio;
+import common.lib.schemaobjects.Holding;
+import common.lib.schemaobjects.Portfolio;
 import sre.engine.strategy.schemaobject.signal.SignalContext;
 import sre.engine.strategy.service.PortfolioManagementService;
 import sre.engine.strategy.service.RiskManagementService;
 
+import javax.sound.sampled.Port;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import static sre.engine.strategy.util.StrategyEngineUtils.sanitize;
+import static common.lib.utils.GenericUtils.sanitize;
 
 @Service
 @RequiredArgsConstructor
@@ -46,48 +47,48 @@ public class RiskManagementServiceImpl implements RiskManagementService {
             return SignalContext.instance();
         }
 
-        BigDecimal portfolioValue = portfolio.snapshot().value();
-        BigDecimal instrumentValue = portfolio.getHolding(instrument).value();
+        Portfolio.Snapshot snapshot = portfolio.snapshot();
+        BigDecimal portfolioValue = snapshot.value();
+        BigDecimal instrumentValue = snapshot.holdings().get(instrument).value();
         BigDecimal signal = signalContext.signal().exposure();
         BigDecimal currentExposure = instrumentValue.divide(portfolioValue, RoundingMode.HALF_UP);
         BigDecimal targetExposure = signal.multiply(MAX_EXPOSURE);
 
         // case 1: entry
         if (instrumentValue.equals(BigDecimal.ZERO)) {
-            return calculateLongEntrySize(portfolio, instrument, currentExposure, targetExposure, signalContext);
+            return calculateLongEntrySize(snapshot, instrument, currentExposure, targetExposure, signalContext);
         }
 
         // case 2: exit
         if (targetExposure.equals(BigDecimal.ZERO)) {
-            return calculateLongExitSize(portfolio, instrument, currentExposure, targetExposure, signalContext);
+            return calculateLongExitSize(snapshot, instrument, currentExposure, targetExposure, signalContext);
         }
         // case 3: expand/trim
         if (currentExposure.compareTo(targetExposure) < 0) {
-            return calculateLongEntrySize(portfolio, instrument, currentExposure, targetExposure, signalContext);
+            return calculateLongEntrySize(snapshot, instrument, currentExposure, targetExposure, signalContext);
         } else {
-            return calculateLongExitSize(portfolio, instrument, currentExposure, targetExposure, signalContext);
+            return calculateLongExitSize(snapshot, instrument, currentExposure, targetExposure, signalContext);
         }
     }
 
-    private SignalContext calculateLongEntrySize(Portfolio portfolio,
+    private SignalContext calculateLongEntrySize(Portfolio.Snapshot portfolio,
                                          String instrument,
                                          BigDecimal currentExposure,
                                          BigDecimal targetExposure,
                                          SignalContext signalContext) {
-        Portfolio.Snapshot snapshot = portfolio.snapshot();
         // calculate estimated quantity for the trade using fixed capital allocation
         // using base capital allocation (2% of account)
-        BigDecimal baseCapital = snapshot.availableCapital().multiply(BASE_CAPITAL_ALLOCATION_PCT);
+        BigDecimal baseCapital = portfolio.availableCapital().multiply(BASE_CAPITAL_ALLOCATION_PCT);
         BigDecimal allocatedCapital = getEstimatedCapitalAllocation(baseCapital, signalContext);
 
-        BigDecimal capitalToReachTarget = snapshot.value().multiply(targetExposure.subtract(currentExposure));
+        BigDecimal capitalToReachTarget = portfolio.value().multiply(targetExposure.subtract(currentExposure));
 
-        BigDecimal maxAllowedAllocation = snapshot.availableCapital().multiply(MAX_CAPITAL_ALLOCATION_PCT);
+        BigDecimal maxAllowedAllocation = portfolio.availableCapital().multiply(MAX_CAPITAL_ALLOCATION_PCT);
 
         BigDecimal capitalToBeInvested = allocatedCapital.min(capitalToReachTarget).min(maxAllowedAllocation)
                 .subtract(getEstimatedCost(Trade.TradeType.BUY));
         BigDecimal actualTargetExposure = portfolio.getHolding(instrument).value().add(capitalToBeInvested)
-                .divide(snapshot.value(), RoundingMode.HALF_UP);
+                .divide(portfolio.value(), RoundingMode.HALF_UP);
 
         if (actualTargetExposure.subtract(currentExposure).abs().compareTo(minExposureChange) <= 0) {
             return SignalContext.instance();
@@ -121,7 +122,7 @@ public class RiskManagementServiceImpl implements RiskManagementService {
         return BigDecimal.ZERO;
     }
 
-    private SignalContext calculateLongExitSize(Portfolio portfolio,
+    private SignalContext calculateLongExitSize(Portfolio.Snapshot portfolio,
                                         String instrument,
                                         BigDecimal currentExposure,
                                         BigDecimal targetExposure,
@@ -149,9 +150,10 @@ public class RiskManagementServiceImpl implements RiskManagementService {
 
     @Override
     public SignalContext triggerSLTP(Portfolio portfolio, String instrument, SignalContext signalContext) {
-        Holding currentHolding = portfolio.getHolding(instrument);
-        BigDecimal slPrice = portfolio.getSlPrice(instrument);
-        BigDecimal tpPrice = portfolio.getTpPrice(instrument);
+        Portfolio.Snapshot snapshot = portfolio.snapshot();
+        Holding currentHolding = snapshot.getHolding(instrument);
+        BigDecimal slPrice = snapshot.getSlPrice(instrument);
+        BigDecimal tpPrice = snapshot.getTpPrice(instrument);
         if (BigDecimal.ZERO.compareTo(currentHolding.quantity()) == 0 || slPrice == null || tpPrice == null) {
             return SignalContext.instance();
         }
@@ -177,7 +179,8 @@ public class RiskManagementServiceImpl implements RiskManagementService {
 
     @Override
     public void updateSLTP(Portfolio portfolio, String instrument) {
-        Holding holding = portfolio.getHolding(instrument);
+        Portfolio.Snapshot snapshot = portfolio.snapshot();
+        Holding holding = snapshot.getHolding(instrument);
         if (BigDecimal.ZERO.compareTo(holding.quantity()) == 0) {
             return;
         }
@@ -195,7 +198,7 @@ public class RiskManagementServiceImpl implements RiskManagementService {
         BigDecimal takeProfit = avgEntryPrice.add(tpDistance);
         portfolio.putTpPrice(instrument, takeProfit);
         if (log.isDebugEnabled()) {
-            log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(portfolio.getSlPrice(instrument)), sanitize(portfolio.getTpPrice(instrument)));
+            log.debug("{}: updating SL-TP, SL: {} TP: {}", instrument, sanitize(snapshot.getSlPrice(instrument)), sanitize(snapshot.getTpPrice(instrument)));
         }
     }
 }
